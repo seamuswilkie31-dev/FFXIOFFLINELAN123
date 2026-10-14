@@ -35,7 +35,8 @@ These need a published server package (see [RELEASING.md](RELEASING.md)) and an 
 
 ## Manual end-to-end checklist
 
-1. Update FINAL FANTASY XI through PlayOnline.
+1. Update FINAL FANTASY XI through PlayOnline. This needs one sign-in to Square Enix's official servers first
+   (see the README's "You bring the game").
 2. Publish a server package and pin it (RELEASING.md), then build or download `LocalXI.exe`.
 3. Fresh run → Solo → finish setup → **Play** → create a character → walk into another zone → close the game.
    Expect: the Logs page shows all five programs starting, the game reaches the character screen, and on close

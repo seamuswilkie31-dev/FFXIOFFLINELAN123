@@ -147,7 +147,8 @@ public sealed partial class PlayViewModel : PageViewModel
             if (config.RunsLocalServer && install.IsUpToDateFor(Launcher.ServerPackage.ClientVersion) == false && !config.Server.AllowOlderClients)
             {
                 warnings.Add($"Your game files ({install.ClientBuildDate:MMMM yyyy}) are older than this server expects. " +
-                             "Update the game with PlayOnline (Check Files > Version Update), or allow older clients in Settings.");
+                             "Update the game through PlayOnline (this needs one sign-in to Square Enix's servers first; a free " +
+                             "trial works - see the README), or allow older clients in Settings for testing.");
             }
         }
 

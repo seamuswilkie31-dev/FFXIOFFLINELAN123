@@ -14,9 +14,24 @@ friend's world. Your characters are saved on your PC and can be carried to anoth
 ## You bring the game
 
 LocalXI contains **no Square Enix files** and never downloads any. You need FINAL FANTASY XI installed
-yourself, for example from Square Enix's official free installer, and **updated to the current version**
-through PlayOnline (*Check Files → Version Update*). The server follows the current retail game, so an old
-install will have problems.
+yourself from Square Enix's official installer, and **updated to the current version**. The server follows the
+current retail game, so an old install will have problems.
+
+**Updating the game needs one sign-in to Square Enix's official servers.** The official installer stops at
+April 2019, and PlayOnline won't offer FINAL FANTASY XI under *Check Files* until the game has connected to the
+official servers once. Any of these works:
+
+- an existing or past FFXI account
+- a newly bought copy (it includes 30 days of play)
+- Square Enix's free trial
+- a "Return Home to Vana'diel" campaign, when Square Enix lets former players back in for free
+
+After that one sign-in, **PlayOnline → Check Files → FINAL FANTASY XI** updates the game whenever needed,
+even if the subscription has lapsed. This follows LandSandBoat's own
+[client setup guide](https://github.com/LandSandBoat/server/wiki/Client-Setup-Windows). LocalXI doesn't support
+ways around it.
+
+On Windows 10, also turn on **DirectPlay** (*Turn Windows features on or off → Legacy Components*).
 
 ## Getting started
 
@@ -61,7 +76,7 @@ Automatic backups are kept in `Documents\LocalXI\Backups`; exports go to `Docume
 | Problem | Try |
 |---|---|
 | The game doesn't open | Settings → **Fix registry**. If that's fine, tick *Run the game as administrator*. |
-| "Your game files are older than this server expects" | Update the game in PlayOnline (*Check Files → Version Update*). |
+| "Your game files are older than this server expects" | Update the game in PlayOnline (*Check Files → FINAL FANTASY XI*). If FINAL FANTASY XI isn't in that list, the game hasn't signed in to Square Enix's servers yet; see [You bring the game](#you-bring-the-game). |
 | Friends can't connect | Network → **Allow friends through Windows Firewall**. Check you're both in the same Radmin network and that the host picked the Radmin address. Friends can use **Test connection**. |
 | "Ports are already in use" | Another FFXI server or launcher is running. Close it. |
 | Anything else | The **Logs** page shows everything the server and database print. |

@@ -159,9 +159,10 @@ public sealed partial class SetupViewModel : ObservableObject
         if (install.ClientBuildDate is { } built && built < DateTime.Now.AddYears(-1))
         {
             ClientAgeWarning =
-                $"Your game files are from {built:MMMM yyyy}. The server needs an up-to-date game, so before playing, " +
-                "open PlayOnline and update FINAL FANTASY XI (Check Files > Version Update). " +
-                "You can finish setup now and update afterwards.";
+                $"Your game files are from {built:MMMM yyyy}, and the server needs an up-to-date game. Square Enix only " +
+                "lets PlayOnline update the game after it has signed in to the official servers once (an existing account, " +
+                "a bought copy or Square Enix's free trial all work). After that, PlayOnline's Check Files keeps it updated " +
+                "even without a subscription. You can finish setup now and update afterwards; the README explains the steps.";
         }
     }
 

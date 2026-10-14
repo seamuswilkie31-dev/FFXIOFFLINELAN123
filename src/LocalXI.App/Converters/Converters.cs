@@ -113,3 +113,11 @@ public sealed partial class EnumDisplayConverter : IValueConverter
     [System.Text.RegularExpressions.GeneratedRegex("[A-Z]")]
     private static partial System.Text.RegularExpressions.Regex WordStart();
 }
+
+public sealed class EraDisplayConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is LocalXI.Core.Config.GameEra era ? EraPresets.Describe(era) : "";
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotSupportedException();
+}

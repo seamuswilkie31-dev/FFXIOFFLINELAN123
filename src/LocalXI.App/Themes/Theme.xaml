@@ -22,6 +22,7 @@
     <conv:TaskGlyphConverter x:Key="TaskGlyph" />
     <conv:TaskBrushConverter x:Key="TaskBrush" />
     <conv:EnumDisplayConverter x:Key="EnumDisplay" />
+    <conv:EraDisplayConverter x:Key="EraDisplay" />
 
     <Style x:Key="PageTitle" TargetType="TextBlock">
         <Setter Property="FontSize" Value="26" />

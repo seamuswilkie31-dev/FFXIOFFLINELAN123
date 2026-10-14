@@ -13,7 +13,13 @@ public sealed record ServerProcessStatus(string Name, string Description, Server
 /// The address clients are told to use for zones. 127.0.0.1 for solo play; the host's LAN or VPN (e.g. Radmin) address when hosting.
 /// </param>
 /// <param name="LocalOnly">Bind the login server to 127.0.0.1 so nothing outside this PC can reach it.</param>
-public sealed record ServerStartOptions(string AdvertisedIp, bool LocalOnly, bool LazyZones, bool AllowOlderClients);
+/// <param name="Settings">Extra XI_* setting overrides, such as an era preset.</param>
+public sealed record ServerStartOptions(
+    string AdvertisedIp,
+    bool LocalOnly,
+    bool LazyZones,
+    bool AllowOlderClients,
+    IReadOnlyDictionary<string, string>? Settings = null);
 
 public sealed class PortsInUseException(IReadOnlyList<string> ports)
     : Exception($"These ports are already in use: {string.Join(", ", ports)}. Another FFXI server may be running - close it and try again.")
@@ -180,6 +186,11 @@ public sealed class LsbServer(ServerPackage package, GameDatabase database, AppP
         if (options.AllowOlderClients)
         {
             environment["XI_LOGIN_VER_LOCK"] = "0";
+        }
+
+        foreach (var (key, value) in options.Settings ?? new Dictionary<string, string>())
+        {
+            environment[key] = value;
         }
 
         return environment;

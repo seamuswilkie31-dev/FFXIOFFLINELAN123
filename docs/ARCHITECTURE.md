@@ -76,6 +76,29 @@ the map server saves characters), waits, and only then force-closes, in reverse 
 `xi_map` runs with `--lazy` by default: zones load when someone enters them, which makes start-up much faster
 for a handful of players.
 
+## Game era
+
+`EraPresets` maps the launcher's era choice onto LandSandBoat's own era support (its `modules/README.md`):
+
+| | Classic (default) | Modern |
+|---|---|---|
+| `XI_MAIN_MAX_LEVEL` | 75 | LandSandBoat default (99) |
+| `XI_MAIN_RESTRICT_CONTENT` | 1: content tagged for disabled expansions isn't loaded | default |
+| Expansions (`XI_MAIN_ENABLE_*`) | ROTZ, COP, TOAU, WOTG, ACP, AMK, ASA on; ABYSSEA, VOIDWATCH, SOA, ROV, TVR off | all on |
+| Later systems | Mog Garden, Mog House 2F, Records of Eminence, Voidwalker, daily tally off | on |
+| `modules/init.txt` | `era/lua` | `era/lua` (its overrides only apply to disabled expansions, so they do nothing here) |
+| `era/sql` data packs | abyssea, voidwatch, soa, rov, tvr (whichever exist) | none |
+
+The settings travel as environment variables at server start, so switching is instant for them. The data packs
+edit game tables in place, so the launcher records the era in `localxi_meta`. When it changes, the next
+Play backs up characters (`before-era-change-*`), re-imports game data (player tables untouched) and applies
+the packs for the new era. The packs only touch game-data tables (abilities, spells, drops, recipes, zones...).
+
+The packs are optional extras that can lag behind LandSandBoat's schema, so they're applied with
+`mariadb --force`: a stale statement is skipped and reported on the Logs page instead of failing the import.
+(As of October 2026, two statements in the `abyssea` pack reference columns that no longer exist.) The main
+game data is still imported strictly.
+
 ## Solo vs Host vs Join
 
 The address clients use to reach a zone comes from the `zone_settings.zoneip` column, and `xi_map` only serves

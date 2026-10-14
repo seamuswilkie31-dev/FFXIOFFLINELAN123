@@ -45,7 +45,9 @@ public partial class MainWindow : Window
         finally
         {
             _shutdownComplete = true;
-            Close();
+            // DisposeAsync can finish synchronously (nothing was running), and WPF ignores Close() from inside the
+            // Closing event, so close once this event has returned.
+            _ = Dispatcher.BeginInvoke(new Action(Close));
         }
     }
 

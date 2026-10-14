@@ -120,10 +120,13 @@ public sealed class LauncherService : IAsyncDisposable
         status?.Report("Starting the database...");
         await MariaDb.StartAsync(Database, cancellationToken);
 
+        var era = Config.Server.Era.ToString();
         var imported = await ImportedServerVersionAsync(cancellationToken);
-        if (imported is not null && (ServerPackage.LsbCommit is null || imported == ServerPackage.LsbCommit))
+        var serverCurrent = imported is not null && (ServerPackage.LsbCommit is null || imported == ServerPackage.LsbCommit);
+        var eraCurrent = await ReadMetaAsync("imported_era", cancellationToken) == era;
+        if (serverCurrent && eraCurrent)
         {
-            return; // Game data matches the installed server.
+            return; // Game data matches the installed server and the chosen era.
         }
 
         if (!ServerPackage.LooksValid)
@@ -141,18 +144,27 @@ public sealed class LauncherService : IAsyncDisposable
         }
         else
         {
-            // A newer server was installed: refresh game data, keep every player table.
-            status?.Report("Server updated - backing up your characters first...");
-            await Saves.BackupAsync("before-update", Config.Account.Username, Config.Backups.Keep, cancellationToken);
-            status?.Report("Updating game data...");
+            // A newer server or a different era: reload game data, keep every player table.
+            status?.Report(serverCurrent ? "Switching game era - backing up your characters first..." : "Server updated - backing up your characters first...");
+            await Saves.BackupAsync(serverCurrent ? "before-era-change" : "before-update", Config.Account.Username, Config.Backups.Keep, cancellationToken);
+            status?.Report("Reloading game data...");
             await importer.RefreshGameDataAsync(ServerPackage.PlayerTables, import, cancellationToken);
         }
 
-        await database.ExecuteAsync($"CREATE TABLE IF NOT EXISTS `{MetaTable}` (`name` VARCHAR(64) PRIMARY KEY, `value` TEXT)", cancellationToken: cancellationToken);
-        await database.ExecuteAsync(
-            $"REPLACE INTO `{MetaTable}` (name, value) VALUES ('imported_server', @v)",
-            new Dictionary<string, object?> { ["@v"] = ServerPackage.LsbCommit ?? "unknown" },
-            cancellationToken);
+        // Era data packs edit game data in place, so they go on after every fresh load of it.
+        var eraFiles = importer.EraSqlFiles(EraPresets.SqlPacks(Config.Server.Era));
+        if (eraFiles.Count > 0)
+        {
+            status?.Report("Applying classic-era game data...");
+            var skipped = await importer.ApplyEraPacksAsync(eraFiles, import, cancellationToken);
+            foreach (var problem in skipped)
+            {
+                Logs.Add("launcher", "Skipped part of a LandSandBoat era data pack (out of date upstream): " + problem);
+            }
+        }
+
+        await WriteMetaAsync("imported_server", ServerPackage.LsbCommit ?? "unknown", cancellationToken);
+        await WriteMetaAsync("imported_era", era, cancellationToken);
     }
 
     /// <summary>
@@ -179,7 +191,11 @@ public sealed class LauncherService : IAsyncDisposable
     }
 
     /// <summary>Which server build the game data was last imported from, or null if the import never finished.</summary>
-    public async Task<string?> ImportedServerVersionAsync(CancellationToken cancellationToken = default)
+    public Task<string?> ImportedServerVersionAsync(CancellationToken cancellationToken = default) =>
+        ReadMetaAsync("imported_server", cancellationToken);
+
+    /// <summary>The launcher's own bookkeeping, kept in a small table inside the game database.</summary>
+    private async Task<string?> ReadMetaAsync(string name, CancellationToken cancellationToken)
     {
         var database = Database;
         if (!await database.DatabaseExistsAsync(cancellationToken) || (await database.ExistingTablesAsync([MetaTable], cancellationToken)).Count == 0)
@@ -187,7 +203,20 @@ public sealed class LauncherService : IAsyncDisposable
             return null;
         }
 
-        return await database.ScalarAsync($"SELECT value FROM `{MetaTable}` WHERE name = 'imported_server'", cancellationToken: cancellationToken) as string;
+        return await database.ScalarAsync(
+            $"SELECT value FROM `{MetaTable}` WHERE name = @name",
+            new Dictionary<string, object?> { ["@name"] = name },
+            cancellationToken) as string;
+    }
+
+    private async Task WriteMetaAsync(string name, string value, CancellationToken cancellationToken)
+    {
+        var database = Database;
+        await database.ExecuteAsync($"CREATE TABLE IF NOT EXISTS `{MetaTable}` (`name` VARCHAR(64) PRIMARY KEY, `value` TEXT)", cancellationToken: cancellationToken);
+        await database.ExecuteAsync(
+            $"REPLACE INTO `{MetaTable}` (name, value) VALUES (@name, @value)",
+            new Dictionary<string, object?> { ["@name"] = name, ["@value"] = value },
+            cancellationToken);
     }
 
     /// <summary>Creates the launcher's account on the local server, or resets its password to match the launcher's.</summary>
@@ -227,9 +256,16 @@ public sealed class LauncherService : IAsyncDisposable
         progress?.Report("Starting the database...");
         await MariaDb.StartAsync(Database, cancellationToken);
 
+        // Only manage the module list in the downloaded server; a developer's own build keeps theirs.
+        if (string.IsNullOrWhiteSpace(Config.Server.OverrideDirectory))
+        {
+            EraPresets.WriteModuleList(ServerDirectory);
+        }
+
+        var era = EraPresets.Settings(Config.Server.Era);
         var options = Config.Mode == PlayMode.Host
-            ? new ServerStartOptions(CheckHostAddress(), LocalOnly: false, Config.Server.LazyZones, Config.Server.AllowOlderClients)
-            : new ServerStartOptions("127.0.0.1", LocalOnly: true, Config.Server.LazyZones, Config.Server.AllowOlderClients);
+            ? new ServerStartOptions(CheckHostAddress(), LocalOnly: false, Config.Server.LazyZones, Config.Server.AllowOlderClients, era)
+            : new ServerStartOptions("127.0.0.1", LocalOnly: true, Config.Server.LazyZones, Config.Server.AllowOlderClients, era);
         await Server.StartAsync(options, progress, cancellationToken);
     }
 

@@ -63,6 +63,16 @@
             <Border Style="{StaticResource Card}" Visibility="{Binding RunsLocalServer, Converter={StaticResource BoolToVisibility}}">
                 <StackPanel>
                     <TextBlock Text="Server" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="Game era" Style="{StaticResource Hint}" Margin="0,0,0,4" />
+                    <ComboBox ItemsSource="{Binding Eras}" SelectedItem="{Binding Era}" Width="380" HorizontalAlignment="Left">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource EraDisplay}}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,12"
+                               Text="Classic plays like the level-75 days: Zilart, Promathia, Aht Urhgan and Wings of the Goddess, with old-style rules. Modern is today's game. Switching reloads the game data the next time you press Play; characters are kept and backed up first." />
                     <CheckBox Content="Load zones on demand (faster start, less memory)" IsChecked="{Binding LazyZones}" Margin="0,0,0,6" />
                     <CheckBox Content="Stop the server when I close the game (it keeps running while friends are online)" IsChecked="{Binding StopWhenGameCloses}" Margin="0,0,0,6" />
                     <CheckBox Content="Allow older game versions to log in (may cause visual glitches)" IsChecked="{Binding AllowOlderClients}" />

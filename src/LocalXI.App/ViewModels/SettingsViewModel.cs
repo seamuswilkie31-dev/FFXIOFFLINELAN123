@@ -18,6 +18,11 @@ public sealed partial class SettingsViewModel(MainViewModel main) : PageViewMode
 
     public IReadOnlyList<WindowMode> WindowModes { get; } = Enum.GetValues<WindowMode>();
 
+    public IReadOnlyList<GameEra> Eras { get; } = Enum.GetValues<GameEra>();
+
+    [ObservableProperty]
+    private GameEra _era;
+
     [ObservableProperty]
     private string _ffxiPath = "";
 
@@ -74,6 +79,7 @@ public sealed partial class SettingsViewModel(MainViewModel main) : PageViewMode
         Height = config.Window.Height;
         WindowMode = config.Window.Mode;
         RunAsAdministrator = config.Window.RunAsAdministrator;
+        Era = config.Server.Era;
         LazyZones = config.Server.LazyZones;
         AllowOlderClients = config.Server.AllowOlderClients;
         StopWhenGameCloses = config.Server.StopWhenGameCloses;
@@ -152,6 +158,8 @@ public sealed partial class SettingsViewModel(MainViewModel main) : PageViewMode
         config.Window.Height = Math.Clamp(Height, 480, 4320);
         config.Window.Mode = WindowMode;
         config.Window.RunAsAdministrator = RunAsAdministrator;
+        var eraChanged = Era != config.Server.Era;
+        config.Server.Era = Era;
         config.Server.LazyZones = LazyZones;
         config.Server.AllowOlderClients = AllowOlderClients;
         config.Server.StopWhenGameCloses = StopWhenGameCloses;
@@ -168,9 +176,14 @@ public sealed partial class SettingsViewModel(MainViewModel main) : PageViewMode
             Launcher.Reload();
         }
 
-        Main.Status = Launcher.Config.RunsLocalServer && Launcher.Server.IsRunning
-            ? "Settings saved. Server settings apply the next time the server starts."
-            : "Settings saved.";
+        Main.Status = (eraChanged, Launcher.Config.RunsLocalServer && Launcher.Server.IsRunning) switch
+        {
+            (true, true) => "Settings saved. Stop the server; the next Play reloads game data for the new era (characters are kept).",
+            (true, false) => "Settings saved. The next Play reloads game data for the new era (characters are kept and backed up first).",
+            (false, true) => "Settings saved. Server settings apply the next time the server starts.",
+            _ => "Settings saved.",
+        };
+        Main.RefreshModeSummary();
         OnShown();
     }
 

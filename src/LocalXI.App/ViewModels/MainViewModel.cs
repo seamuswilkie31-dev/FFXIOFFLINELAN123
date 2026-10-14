@@ -4,6 +4,7 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using LocalXI.Core;
 using LocalXI.Core.Config;
+using LocalXI.Core.Server;
 
 namespace LocalXI.App.ViewModels;
 
@@ -76,12 +77,16 @@ public sealed partial class MainViewModel : ObservableObject
         CurrentPage?.OnShown();
     }
 
-    public void RefreshModeSummary() => ModeSummary = Launcher.Config.Mode switch
+    public void RefreshModeSummary()
     {
-        PlayMode.Host => $"Hosting for friends\n{Launcher.Config.Host.AdvertisedIp}",
-        PlayMode.Join => $"Joining a friend\n{Launcher.Config.Join.ServerAddress}",
-        _ => "Playing solo",
-    };
+        var era = EraPresets.ShortName(Launcher.Config.Server.Era);
+        ModeSummary = Launcher.Config.Mode switch
+        {
+            PlayMode.Host => $"Hosting for friends\n{Launcher.Config.Host.AdvertisedIp}\n{era}",
+            PlayMode.Join => $"Joining a friend\n{Launcher.Config.Join.ServerAddress}",
+            _ => $"Playing solo\n{era}",
+        };
+    }
 
     /// <summary>
     /// Runs one long operation at a time (Play, Stop, Import...), reporting progress in the status bar and showing

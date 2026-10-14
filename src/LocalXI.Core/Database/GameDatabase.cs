@@ -104,10 +104,16 @@ public sealed class GameDatabase(AppPaths paths, DatabaseSettings settings)
     /// Runs SQL through the mariadb command-line client. LandSandBoat's .sql files rely on client features such as
     /// DELIMITER (for triggers), so they must go through the real client rather than a driver.
     /// </summary>
-    public Task<ProcessResult> RunScriptAsync(string mariaDbClient, string script, CancellationToken cancellationToken = default) =>
+    /// <param name="continueOnError">Keep going past failing statements (mariadb --force) instead of stopping at the first.</param>
+    public Task<ProcessResult> RunScriptAsync(string mariaDbClient, string script, CancellationToken cancellationToken = default, bool continueOnError = false) =>
         ProcessRunner.RunAsync(
             mariaDbClient,
-            [$"--defaults-extra-file={WriteClientConfig()}", $"--database={settings.Name}", "--batch"],
+            [
+                $"--defaults-extra-file={WriteClientConfig()}",
+                $"--database={settings.Name}",
+                "--batch",
+                .. continueOnError ? new[] { "--force" } : [],
+            ],
             standardInput: script,
             cancellationToken: cancellationToken);
 

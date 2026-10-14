@@ -47,6 +47,8 @@
                         </StackPanel>
                     </RadioButton>
                     <TextBlock Style="{StaticResource Hint}" Text="You can change this any time on the Network page." />
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="New worlds play like the classic level-75 days (up to Wings of the Goddess). You can switch to modern rules in Settings." />
                 </StackPanel>
 
                 <!-- Step 2: game folder -->

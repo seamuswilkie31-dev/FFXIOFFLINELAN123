@@ -47,6 +47,16 @@ On Windows 10, also turn on **DirectPlay** (*Turn Windows features on or off →
 
 The server starts when you press Play and stops, with an automatic backup, when you close the game.
 
+## Classic or modern
+
+New worlds play like the **classic level-75 era**: the original game plus Rise of the Zilart, Chains of
+Promathia, Treasures of Aht Urhgan and Wings of the Goddess (with its add-on scenarios), and the old-style
+rules. Later systems such as Abyssea, Adoulin, Records of Eminence and the Mog Garden are switched off. This
+uses LandSandBoat's own era support: its content restrictions, the `era/lua` rule modules and the `era/sql` data packs.
+
+Prefer today's game? **Settings → Game era → Modern** (level 99, every expansion). Switching reloads the game
+data the next time you press Play. Your characters are kept and backed up first.
+
 ## Playing with friends
 
 **Same house:** choose *Host for friends* and pick your home network address. Friends choose *Join a

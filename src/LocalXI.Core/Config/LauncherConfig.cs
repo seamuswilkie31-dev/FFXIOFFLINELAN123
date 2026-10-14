@@ -12,6 +12,15 @@ public enum PlayMode
     Join,
 }
 
+public enum GameEra
+{
+    /// <summary>The level-75 era up to Wings of the Goddess, like classic-era community servers.</summary>
+    Classic75,
+
+    /// <summary>Current retail rules: level 99 and every expansion.</summary>
+    Modern,
+}
+
 /// <summary>Values match the game's own registry setting 0034 (see Ashita docs for [ffxi.registry]).</summary>
 public enum WindowMode
 {
@@ -74,6 +83,8 @@ public sealed class GameWindowSettings
 
 public sealed class ServerOptions
 {
+    public GameEra Era { get; set; } = GameEra.Classic75;
+
     /// <summary>Load zones on demand: much faster start-up and less memory for small groups.</summary>
     public bool LazyZones { get; set; } = true;
 

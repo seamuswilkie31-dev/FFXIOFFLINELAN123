@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <Version>0.1.0</Version>
+    <Authors>LocalXI contributors</Authors>
+    <Product>LocalXI</Product>
+    <Copyright>GPL-3.0-or-later</Copyright>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>LocalXI.Core</RootNamespace>
+    <!-- Needed by the LibraryImport source generator for the console-signal P/Invokes. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The pinned list of everything the launcher downloads. Lives at the repo root so it is easy to find and bump. -->
+    <EmbeddedResource Include="..\..\components.json" LogicalName="components.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="MySqlConnector" Version="2.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="LocalXI.Core.Tests" />
+  </ItemGroup>
+
+</Project>

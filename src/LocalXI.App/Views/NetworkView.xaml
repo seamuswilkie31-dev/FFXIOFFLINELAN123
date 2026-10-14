@@ -1,0 +1,96 @@
+<UserControl x:Class="LocalXI.App.Views.NetworkView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+            <TextBlock Text="Network" Style="{StaticResource PageTitle}" />
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="How do you want to play?" Style="{StaticResource SectionTitle}" />
+                    <RadioButton Style="{StaticResource ChoiceCard}" GroupName="netmode"
+                                 IsChecked="{Binding Mode, Converter={StaticResource EnumEquals}, ConverterParameter=Solo}">
+                        <StackPanel>
+                            <TextBlock Text="Solo" FontWeight="SemiBold" FontSize="15" />
+                            <TextBlock Text="Server and game on this PC. Nobody else can connect." Style="{StaticResource Hint}" Margin="0" />
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton Style="{StaticResource ChoiceCard}" GroupName="netmode"
+                                 IsChecked="{Binding Mode, Converter={StaticResource EnumEquals}, ConverterParameter=Host}">
+                        <StackPanel>
+                            <TextBlock Text="Host for friends" FontWeight="SemiBold" FontSize="15" />
+                            <TextBlock Text="Friends in your house, or anywhere through Radmin VPN, can join your world." Style="{StaticResource Hint}" Margin="0" />
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton Style="{StaticResource ChoiceCard}" GroupName="netmode"
+                                 IsChecked="{Binding Mode, Converter={StaticResource EnumEquals}, ConverterParameter=Join}">
+                        <StackPanel>
+                            <TextBlock Text="Join a friend" FontWeight="SemiBold" FontSize="15" />
+                            <TextBlock Text="Play on a friend's server. Nothing is hosted on this PC." Style="{StaticResource Hint}" Margin="0" />
+                        </StackPanel>
+                    </RadioButton>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Visibility="{Binding IsHostSelected, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <TextBlock Text="Address friends connect to" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="Using Radmin VPN? Pick the Radmin address (26.x.x.x) and share it with friends in your Radmin network. Friends in the same house can use your home network address instead. Everyone must use the address chosen here." />
+                    <StackPanel Orientation="Horizontal">
+                        <ComboBox ItemsSource="{Binding Addresses}" SelectedItem="{Binding SelectedAddress}" DisplayMemberPath="Label" MinWidth="380" />
+                        <Button Content="Refresh" Command="{Binding RefreshAddressesCommand}" Margin="10,0,0,0" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding FirewallStatus}" TextWrapping="Wrap" Margin="0,16,0,8" />
+                    <Button Content="Allow friends through Windows Firewall" Command="{Binding AllowThroughFirewallCommand}" HorizontalAlignment="Left" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Visibility="{Binding IsJoinSelected, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <TextBlock Text="Your friend's address" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="Ask your friend for the address shown on their Play page. Radmin VPN addresses start with 26." />
+                    <WrapPanel>
+                        <TextBox Text="{Binding JoinAddress, UpdateSourceTrigger=PropertyChanged}" MinWidth="260" Margin="0,0,10,8" />
+                        <Button Content="Test connection" Command="{Binding TestConnectionCommand}" Margin="0,0,10,8" />
+                        <Button Content="Create my account there" Command="{Binding CreateMyAccountOnHostCommand}" Margin="0,0,10,8" />
+                    </WrapPanel>
+                    <TextBlock Text="{Binding ConnectionResult}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <Button Style="{StaticResource PrimaryButton}" Content="Apply" Command="{Binding ApplyCommand}" HorizontalAlignment="Left" Margin="0,0,0,16" />
+
+            <Border Style="{StaticResource Card}" Visibility="{Binding IsHosting, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <TextBlock Text="Accounts on your server" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="Friends can create their own account from their launcher. You can also make one for them here, or reset a forgotten password by entering their username and a new password." />
+                    <ItemsControl ItemsSource="{Binding Accounts}" Margin="0,0,0,8">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Margin="0,2">
+                                    <Run Text="{Binding Login, Mode=OneWay}" FontWeight="SemiBold" />
+                                    <Run Text="{Binding Characters, Mode=OneWay, StringFormat='({0} characters)'}" Foreground="{StaticResource SubtleTextBrush}" />
+                                </TextBlock>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="{Binding AccountsNote}" Style="{StaticResource Hint}" Visibility="{Binding AccountsNote, Converter={StaticResource NullToVisibility}}" />
+                    <WrapPanel>
+                        <StackPanel Margin="0,0,10,0">
+                            <TextBlock Text="Username" Style="{StaticResource Hint}" Margin="0,0,0,4" />
+                            <TextBox Text="{Binding FriendUsername, UpdateSourceTrigger=PropertyChanged}" MinWidth="180" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,10,0">
+                            <TextBlock Text="Password" Style="{StaticResource Hint}" Margin="0,0,0,4" />
+                            <TextBox Text="{Binding FriendPassword, UpdateSourceTrigger=PropertyChanged}" MinWidth="180" />
+                        </StackPanel>
+                        <Button Content="Create / reset account" Command="{Binding CreateFriendAccountCommand}" VerticalAlignment="Bottom" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

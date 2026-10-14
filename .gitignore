@@ -1,0 +1,14 @@
+# Build output
+bin/
+obj/
+publish/
+artifacts/
+*.user
+.vs/
+.idea/
+
+# Test output
+TestResults/
+
+# Local launcher data when running in portable mode
+LocalXI-data/

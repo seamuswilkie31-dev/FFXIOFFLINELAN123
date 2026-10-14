@@ -1,0 +1,57 @@
+name: Launcher
+
+# Builds and tests the launcher on every push and pull request. Pushing a tag like v0.2.0
+# also publishes LocalXI.exe (one self-contained file, no .NET install needed) as a release.
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Test
+        run: dotnet test tests/LocalXI.Core.Tests/LocalXI.Core.Tests.csproj -c Release
+
+      - name: Version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=0.0.0-dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish
+        run: >
+          dotnet publish src/LocalXI.App/LocalXI.App.csproj -c Release -r win-x64 --self-contained
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true -p:DebugType=None
+          -p:Version=${{ steps.version.outputs.value }}
+          -o publish
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LocalXI
+          path: publish/LocalXI.exe
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" publish/LocalXI.exe --title "LocalXI $GITHUB_REF_NAME" --generate-notes --latest

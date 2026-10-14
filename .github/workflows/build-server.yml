@@ -1,0 +1,142 @@
+name: Build server package
+
+# Builds LandSandBoat for Windows and publishes it as a GitHub release that the launcher downloads.
+# Run it from the Actions tab, then copy the version and hashes from the run summary into
+# components.json (see docs/RELEASING.md). Build steps mirror LandSandBoat's own
+# .github/workflows/runner_build.yml; if their build changes, update this to match.
+
+on:
+  workflow_dispatch:
+    inputs:
+      lsb_ref:
+        description: LandSandBoat branch, tag or commit to build
+        required: true
+        default: base
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-2025
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out LandSandBoat
+        uses: actions/checkout@v4
+        with:
+          repository: LandSandBoat/server
+          ref: ${{ inputs.lsb_ref }}
+          path: lsb
+          submodules: true # navmeshes + ximeshes
+          fetch-depth: 1
+
+      - name: Read versions
+        id: meta
+        working-directory: lsb
+        run: |
+          commit=$(git rev-parse HEAD)
+          client=$(sed -nE "s/.*CLIENT_VER *= *['\"]([^'\"]+)['\"].*/\1/p" settings/default/login.lua | head -n1)
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+          echo "tag=server-${commit:0:10}" >> "$GITHUB_OUTPUT"
+          echo "client=$client" >> "$GITHUB_OUTPUT"
+
+      - name: Set up MSVC
+        uses: TheMrMilchmann/setup-msvc-dev@v4
+        with:
+          arch: x64
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install code generator dependencies
+        run: python -m pip install jinja2 jsonschema ruamel.yaml
+
+      - name: Configure
+        working-directory: lsb
+        run: |
+          cmake -G Ninja -S . -B build --fresh \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DPCH_ENABLE=OFF \
+            -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded
+
+      - name: Build
+        working-directory: lsb
+        run: cmake --build build
+
+      - name: Package
+        env:
+          COMMIT: ${{ steps.meta.outputs.commit }}
+          CLIENT: ${{ steps.meta.outputs.client }}
+          REF: ${{ inputs.lsb_ref }}
+        run: |
+          set -euo pipefail
+          pkg=package/server
+          mkdir -p "$pkg/res" "$pkg/log"
+
+          # Executables land in the repo root, next to the prebuilt dependency DLLs (skip debug builds of those).
+          cp lsb/xi_*.exe "$pkg/"
+          find lsb -maxdepth 1 -name '*.dll' ! -name '*-d_*' -exec cp {} "$pkg/" \;
+
+          # Runtime files, as in LandSandBoat's own Docker image. scripts/ and data/ include generated code.
+          cp -r lsb/sql lsb/scripts lsb/settings lsb/modules lsb/data lsb/tools "$pkg/"
+          cp lsb/res/compress.dat lsb/res/decompress.dat "$pkg/res/"
+          cp lsb/LICENSE "$pkg/LICENSE-LandSandBoat.txt"
+
+          cat > "$pkg/localxi-server.json" <<EOF
+          {
+            "lsbCommit": "$COMMIT",
+            "lsbRef": "$REF",
+            "clientVersion": "$CLIENT",
+            "builtAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+
+          # Meshes change rarely, so they ship separately and survive server updates.
+          mkdir -p package/meshes
+          cp -r lsb/navmeshes lsb/ximeshes package/meshes/
+          rm -f package/meshes/navmeshes/.git package/meshes/ximeshes/.git
+
+          (cd package/server && 7z a -tzip -mx=7 ../../localxi-server-win64.zip . > /dev/null)
+          (cd package/meshes && 7z a -tzip -mx=7 ../../localxi-meshes.zip . > /dev/null)
+          sha256sum localxi-server-win64.zip localxi-meshes.zip | tee SHA256SUMS.txt
+          ls -lh localxi-*.zip
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          COMMIT: ${{ steps.meta.outputs.commit }}
+          CLIENT: ${{ steps.meta.outputs.client }}
+        run: |
+          notes="LandSandBoat built for Windows from https://github.com/LandSandBoat/server/commit/$COMMIT
+          (GPL-3.0 - the complete source for these binaries is at that link).
+
+          Expects game client version $CLIENT.
+          This is a component of LocalXI; players should download LocalXI.exe from the latest launcher release instead."
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$TAG" localxi-server-win64.zip localxi-meshes.zip SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" localxi-server-win64.zip localxi-meshes.zip SHA256SUMS.txt \
+              --repo "$GITHUB_REPOSITORY" --title "Server package $TAG" --notes "$notes" --prerelease
+          fi
+
+      - name: Summary
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          server=$(grep localxi-server-win64.zip SHA256SUMS.txt | cut -d' ' -f1)
+          meshes=$(grep localxi-meshes.zip SHA256SUMS.txt | cut -d' ' -f1)
+          {
+            echo "### Server package published: \`$TAG\`"
+            echo
+            echo "Update \`components.json\`:"
+            echo
+            echo "| component | version | sha256 |"
+            echo "|---|---|---|"
+            echo "| server | \`$TAG\` | \`$server\` |"
+            echo "| meshes | \`$TAG\` | \`$meshes\` |"
+          } >> "$GITHUB_STEP_SUMMARY"

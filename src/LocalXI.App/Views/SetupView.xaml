@@ -1,0 +1,190 @@
+<UserControl x:Class="LocalXI.App.Views.SetupView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel MaxWidth="760" Margin="32,32,32,18">
+            <TextBlock Text="Welcome to LocalXI" FontSize="30" FontWeight="Bold" Foreground="{StaticResource GoldBrush}" />
+            <TextBlock Style="{StaticResource Hint}">
+                <Run Text="Step" />
+                <Run Text="{Binding StepNumber, Mode=OneWay}" />
+                <Run Text="of 4" />
+            </TextBlock>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel MaxWidth="760" Margin="32,0,32,20">
+
+                <!-- Step 1: how to play -->
+                <StackPanel Visibility="{Binding IsModeStep, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="How do you want to play?" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,6" />
+                    <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,14"
+                               Text="You need your own FINAL FANTASY XI installed - the free official installer from Square Enix is fine. LocalXI never includes or downloads any game files." />
+                    <RadioButton Style="{StaticResource ChoiceCard}" GroupName="setupmode"
+                                 IsChecked="{Binding Mode, Converter={StaticResource EnumEquals}, ConverterParameter=Solo}">
+                        <StackPanel>
+                            <TextBlock Text="Play solo" FontWeight="SemiBold" FontSize="16" />
+                            <TextBlock Text="Your own world on this PC. Nobody else can connect." Style="{StaticResource Hint}" Margin="0" />
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton Style="{StaticResource ChoiceCard}" GroupName="setupmode"
+                                 IsChecked="{Binding Mode, Converter={StaticResource EnumEquals}, ConverterParameter=Host}">
+                        <StackPanel>
+                            <TextBlock Text="Host for friends" FontWeight="SemiBold" FontSize="16" />
+                            <TextBlock Text="Your world on this PC, and friends in your house or on Radmin VPN can join you." Style="{StaticResource Hint}" Margin="0" />
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton Style="{StaticResource ChoiceCard}" GroupName="setupmode"
+                                 IsChecked="{Binding Mode, Converter={StaticResource EnumEquals}, ConverterParameter=Join}">
+                        <StackPanel>
+                            <TextBlock Text="Join a friend" FontWeight="SemiBold" FontSize="16" />
+                            <TextBlock Text="Play in a friend's world. Nothing is hosted on this PC." Style="{StaticResource Hint}" Margin="0" />
+                        </StackPanel>
+                    </RadioButton>
+                    <TextBlock Style="{StaticResource Hint}" Text="You can change this any time on the Network page." />
+                </StackPanel>
+
+                <!-- Step 2: game folder -->
+                <StackPanel Visibility="{Binding IsGameStep, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="Where is FINAL FANTASY XI installed?" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,6" />
+                    <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,12"
+                               Text="Choose the folder named &quot;FINAL FANTASY XI&quot; (usually inside PlayOnline\SquareEnix). It is only read, never changed." />
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Browse..." Command="{Binding BrowseGameFolderCommand}" Margin="10,0,0,0" />
+                        <TextBox Text="{Binding FfxiPath, UpdateSourceTrigger=PropertyChanged, Delay=400}" />
+                    </DockPanel>
+                    <ItemsControl ItemsSource="{Binding GameChecks}" Margin="0,12,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Margin="0,3" TextWrapping="Wrap">
+                                    <Run Text="{Binding Passed, Mode=OneWay, Converter={StaticResource CheckMark}}" Foreground="{Binding Passed, Converter={StaticResource CheckBrush}}" FontWeight="Bold" />
+                                    <Run Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold" />
+                                    <Run Text="-" Foreground="{StaticResource SubtleTextBrush}" />
+                                    <Run Text="{Binding Detail, Mode=OneWay}" Foreground="{StaticResource SubtleTextBrush}" />
+                                </TextBlock>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Border Background="#2A2416" BorderBrush="{StaticResource WarnBrush}" BorderThickness="1" CornerRadius="6" Padding="12,9" Margin="0,14,0,0"
+                            Visibility="{Binding RegistryOk, Converter={StaticResource InverseBoolToVisibility}}">
+                        <StackPanel>
+                            <TextBlock TextWrapping="Wrap"
+                                       Text="Windows doesn't have this install location registered (common when the game was copied from another PC). The game needs it to start. Fixing it asks for administrator permission once." />
+                            <Button Content="Fix registry" Command="{Binding FixRegistryCommand}" HorizontalAlignment="Left" Margin="0,10,0,0" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#2A2416" BorderBrush="{StaticResource WarnBrush}" BorderThickness="1" CornerRadius="6" Padding="12,9" Margin="0,14,0,0"
+                            Visibility="{Binding ClientAgeWarning, Converter={StaticResource NullToVisibility}}">
+                        <TextBlock Text="{Binding ClientAgeWarning}" TextWrapping="Wrap" />
+                    </Border>
+                </StackPanel>
+
+                <!-- Step 3: login and network -->
+                <StackPanel Visibility="{Binding IsAccountStep, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="Your login" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,6" />
+                    <TextBlock Text="{Binding AccountIntro}" Style="{StaticResource Hint}" Margin="0,0,0,12" />
+
+                    <StackPanel Visibility="{Binding IsJoin, Converter={StaticResource BoolToVisibility}}" Margin="0,0,0,14">
+                        <TextBlock Text="Your friend's address" Style="{StaticResource Hint}" Margin="0,0,0,4" />
+                        <TextBox Text="{Binding JoinAddress, UpdateSourceTrigger=PropertyChanged}" Width="260" HorizontalAlignment="Left" />
+                        <TextBlock Style="{StaticResource Hint}"
+                                   Text="Shown on your friend's Play page. If you play over Radmin VPN, join their Radmin network first; the address starts with 26." />
+                    </StackPanel>
+
+                    <TextBlock Text="Username" Style="{StaticResource Hint}" Margin="0,0,0,4" />
+                    <TextBox Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}" Width="260" HorizontalAlignment="Left" Margin="0,0,0,10" />
+                    <TextBlock Text="Password" Style="{StaticResource Hint}" Margin="0,0,0,4" />
+                    <PasswordBox x:Name="PasswordInput" Width="260" HorizontalAlignment="Left" Margin="0,0,0,10" PasswordChanged="OnPasswordChanged" />
+                    <TextBlock Text="Password again" Style="{StaticResource Hint}" Margin="0,0,0,4" />
+                    <PasswordBox x:Name="ConfirmInput" Width="260" HorizontalAlignment="Left" Margin="0,0,0,10" PasswordChanged="OnPasswordChanged" />
+
+                    <StackPanel Visibility="{Binding IsHost, Converter={StaticResource BoolToVisibility}}" Margin="0,8,0,0">
+                        <TextBlock Text="Address friends will connect to" Style="{StaticResource Hint}" Margin="0,0,0,4" />
+                        <StackPanel Orientation="Horizontal">
+                            <ComboBox ItemsSource="{Binding Addresses}" SelectedItem="{Binding SelectedAddress}" DisplayMemberPath="Label" MinWidth="380" />
+                            <Button Content="Refresh" Command="{Binding RefreshAddressesCommand}" Margin="10,0,0,0" />
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Hint}"
+                                   Text="Playing with friends over the internet? Install Radmin VPN, create a network, have friends join it, then press Refresh and pick the Radmin address (26.x.x.x). For friends in the same house, pick your home network address." />
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding AccountError}" Foreground="{StaticResource WarnBrush}" TextWrapping="Wrap" Margin="0,6,0,0" />
+
+                    <Expander Header="Advanced" Margin="0,16,0,0" Visibility="{Binding IsJoin, Converter={StaticResource InverseBoolToVisibility}}">
+                        <StackPanel Margin="0,8,0,0">
+                            <TextBlock Style="{StaticResource Hint}"
+                                       Text="Use a LandSandBoat server you built yourself instead of downloading one. Leave empty unless you know you need this." />
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="Browse..." Command="{Binding BrowseOverrideCommand}" Margin="10,0,0,0" />
+                                <TextBox Text="{Binding OverrideDirectory}" />
+                            </DockPanel>
+                        </StackPanel>
+                    </Expander>
+                </StackPanel>
+
+                <!-- Step 4: install -->
+                <StackPanel Visibility="{Binding IsInstallStep, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="Setting things up" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,6" />
+                    <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,12"
+                               Text="The first time, this downloads a few hundred MB and loads the game data into the database. It only happens once." />
+                    <ProgressBar Value="{Binding Progress}" Maximum="100" Height="6" Margin="0,0,0,16" />
+
+                    <ItemsControl ItemsSource="{Binding Tasks}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="28" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding State, Converter={StaticResource TaskGlyph}}" Foreground="{Binding State, Converter={StaticResource TaskBrush}}"
+                                               FontWeight="Bold" FontSize="15" />
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Detail}" Style="{StaticResource Hint}" Margin="0" />
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Border Background="#2A1A1A" BorderBrush="{StaticResource BadBrush}" BorderThickness="1" CornerRadius="6" Padding="14,10" Margin="0,8,0,0"
+                            Visibility="{Binding InstallFailed, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel>
+                            <TextBlock Text="{Binding Error}" TextWrapping="Wrap" />
+                            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                <Button Content="Retry" Command="{Binding RetryCommand}" Margin="0,0,10,0" />
+                                <Button Content="Change my answers" Command="{Binding ChangeAnswersCommand}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Margin="0,8,0,0" Visibility="{Binding InstallDone, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel>
+                            <TextBlock Text="{Binding DoneMessage}" TextWrapping="Wrap" FontSize="15" />
+                            <Button Style="{StaticResource PrimaryButton}" Content="Let's go" Command="{Binding FinishCommand}" HorizontalAlignment="Left" Margin="0,14,0,0" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Background="{StaticResource SidebarBrush}" Padding="32,14"
+                Visibility="{Binding IsInstallStep, Converter={StaticResource InverseBoolToVisibility}}">
+            <DockPanel MaxWidth="760">
+                <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Content="Next" Command="{Binding NextCommand}" />
+                <Button DockPanel.Dock="Right" Content="Back" Command="{Binding BackCommand}" Margin="0,0,10,0" />
+                <Button DockPanel.Dock="Left" Content="Cancel" Command="{Binding CancelCommand}" HorizontalAlignment="Left"
+                        Visibility="{Binding CanCancel, Converter={StaticResource BoolToVisibility}}" />
+                <Border />
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

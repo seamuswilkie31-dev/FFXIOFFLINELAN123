@@ -1,0 +1,86 @@
+<Window x:Class="LocalXI.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:LocalXI.App.ViewModels"
+        xmlns:views="clr-namespace:LocalXI.App.Views"
+        Title="LocalXI"
+        Width="1080" Height="740" MinWidth="900" MinHeight="600"
+        WindowStartupLocation="CenterScreen"
+        Background="#10151C" Foreground="#E8EDF3" FontSize="14">
+
+    <Window.Resources>
+        <DataTemplate DataType="{x:Type vm:PlayViewModel}">
+            <views:PlayView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SavesViewModel}">
+            <views:SavesView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:NetworkViewModel}">
+            <views:NetworkView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+            <views:SettingsView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:LogsViewModel}">
+            <views:LogsView />
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <!-- Main layout: sidebar + page -->
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="230" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Background="{StaticResource SidebarBrush}">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Margin="22,26,22,24">
+                        <TextBlock Text="LocalXI" FontSize="28" FontWeight="Bold" Foreground="{StaticResource GoldBrush}" />
+                        <TextBlock Text="Your own private server" Style="{StaticResource Hint}" />
+                    </StackPanel>
+
+                    <Border DockPanel.Dock="Bottom" Padding="22,16" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,1,0,0">
+                        <TextBlock Text="{Binding ModeSummary}" Style="{StaticResource Hint}" Margin="0" />
+                    </Border>
+
+                    <StackPanel>
+                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Content="▶  Play"
+                                     IsChecked="{Binding CurrentPageName, Converter={StaticResource EnumEquals}, ConverterParameter=Play}" />
+                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Content="💾  Saves"
+                                     IsChecked="{Binding CurrentPageName, Converter={StaticResource EnumEquals}, ConverterParameter=Saves}" />
+                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Content="🌐  Network"
+                                     IsChecked="{Binding CurrentPageName, Converter={StaticResource EnumEquals}, ConverterParameter=Network}" />
+                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Content="⚙  Settings"
+                                     IsChecked="{Binding CurrentPageName, Converter={StaticResource EnumEquals}, ConverterParameter=Settings}" />
+                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Content="📜  Logs"
+                                     IsChecked="{Binding CurrentPageName, Converter={StaticResource EnumEquals}, ConverterParameter=Logs}" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <ContentControl Content="{Binding CurrentPage}" Margin="32,26,32,10" />
+
+                <Border Grid.Row="1" Background="{StaticResource SidebarBrush}" Padding="18,9">
+                    <DockPanel>
+                        <ProgressBar DockPanel.Dock="Right" Width="140" Height="4" IsIndeterminate="True"
+                                     Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
+                        <TextBlock Text="{Binding Status}" Foreground="{StaticResource SubtleTextBrush}" TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- The setup wizard covers everything until it is finished. -->
+        <Grid Background="#10151C" Visibility="{Binding Setup, Converter={StaticResource NullToVisibility}}">
+            <views:SetupView DataContext="{Binding Setup}" />
+        </Grid>
+    </Grid>
+</Window>

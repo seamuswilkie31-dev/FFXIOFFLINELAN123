@@ -146,8 +146,21 @@ game's window size, mode and screenshot folder (Ashita applies these instead of 
 to exit, then waits for the server to save the character, backs up and stops the server (unless friends are
 still online in Host mode).
 
-The game and xiloader find their files through `HKLM\SOFTWARE\PlayOnlineUS\InstallFolder` (32-bit view):
-`0001` is the game folder and `1000` the PlayOnline Viewer folder. **Fix registry** writes these.
+Windows finds the game through two kinds of registry entries, both written by Square Enix's installer:
+
+- **COM classes.** xiloader creates PlayOnline (`POLCoreCom`, in `viewer\com\polcore.dll`) and the game
+  (`FFXiEntry`, in `FFXi.dll`, which loads `FFXiMain.dll`) with `CoCreateInstance`, so Windows looks the DLLs up
+  under `HKLM\SOFTWARE\Classes\CLSID` (32-bit view). Machine-wide entries are what count, because COM ignores
+  per-user registrations in elevated processes and the game runs elevated.
+- **Install folders.** xiloader hands PlayOnline the folder in `HKLM\SOFTWARE\PlayOnlineUS\InstallFolder`
+  value `1000` (PlayOnline Viewer), and the game reads its data from value `0001` (FINAL FANTASY XI).
+
+A folder copied from another PC has neither. `PlayOnlineRegistry` checks both against the chosen folders, and
+**Fix registry** writes both. It writes the ten classes the official US installer registers for files in those
+folders (game, PlayOnline core, app, contents and movie source), but only those whose DLL exists and isn't
+already registered there, so a working install is left alone. When it re-points a class, it also drops any
+Windows Installer descriptor (the `InprocServer32` value), which COM would otherwise follow back to the old
+install.
 
 ## Administrator rights
 

@@ -40,6 +40,12 @@ public sealed class LauncherConfig
     public HostSettings Host { get; set; } = new();
     public JoinSettings Join { get; set; } = new();
     public GameWindowSettings Window { get; set; } = new();
+
+    /// <summary>
+    /// Start the game through Ashita (addons, window settings). Off means xiloader starts it alone, for when a
+    /// Square Enix update has broken Ashita until a newer version is pinned.
+    /// </summary>
+    public bool UseAshita { get; set; } = true;
     public ServerOptions Server { get; set; } = new();
     public BackupSettings Backups { get; set; } = new();
 

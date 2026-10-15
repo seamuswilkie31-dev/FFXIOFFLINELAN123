@@ -199,6 +199,7 @@ public sealed class ComponentInstaller(AppPaths paths, HttpClient http, string r
 
                 var to = Path.Combine(root, keep);
                 DeleteDirectory(to);
+                Directory.CreateDirectory(Path.GetDirectoryName(to)!); // preserved paths can be nested, e.g. config/addons
                 Directory.Move(from, to);
             }
 

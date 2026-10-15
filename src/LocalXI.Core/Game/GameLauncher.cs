@@ -4,7 +4,7 @@ using LocalXI.Core.Util;
 
 namespace LocalXI.Core.Game;
 
-/// <summary>Starts FINAL FANTASY XI through Ashita, with xiloader as the bootloader pointed at the chosen server.</summary>
+/// <summary>Starts FINAL FANTASY XI through Ashita (or xiloader alone), with xiloader pointed at the chosen server.</summary>
 public sealed class GameLauncher(AppPaths paths)
 {
     public const string BootConfigName = "localxi.ini";
@@ -50,21 +50,33 @@ public sealed class GameLauncher(AppPaths paths)
     internal static string XiloaderCommand(string serverAddress, AccountSettings account) =>
         $"--server {serverAddress} --user {account.Username} --pass {account.Password} --hide";
 
-    public void Launch()
+    public string Xiloader => Path.Combine(paths.AshitaDir, "bootloader", "xiloader.exe");
+
+    /// <summary>
+    /// Starts the game. Normally through Ashita (call <see cref="WriteBootConfig"/> first); without it, xiloader
+    /// starts the game on its own, which keeps the game playable when a Square Enix update has broken Ashita.
+    /// </summary>
+    public void Launch(bool useAshita, string serverAddress, AccountSettings account)
     {
-        if (!File.Exists(AshitaCli))
+        var program = useAshita ? AshitaCli : Xiloader;
+        if (!File.Exists(program))
         {
-            throw new FileNotFoundException("Ashita is not installed. Run setup again from Settings.", AshitaCli);
+            throw new FileNotFoundException($"{Path.GetFileName(program)} is missing. Run setup again from Settings.", program);
         }
 
-        // Ashita-cli.exe's manifest requires administrator rights (it injects into the game). Starting it directly
-        // fails with "requires elevation"; going through the shell makes Windows show its permission prompt instead.
-        var startInfo = new ProcessStartInfo(AshitaCli)
+        // Both run elevated: Ashita-cli.exe's manifest requires it (it injects into the game; starting it directly
+        // fails with "requires elevation"), and the game writes its settings into its own folder under Program Files.
+        // Going through the shell makes Windows show its permission prompt.
+        var startInfo = new ProcessStartInfo(program)
         {
-            WorkingDirectory = paths.AshitaDir,
+            WorkingDirectory = Path.GetDirectoryName(program)!,
             UseShellExecute = true,
-            Arguments = BootConfigName,
+            Arguments = useAshita ? BootConfigName : XiloaderCommand(serverAddress, account),
         };
+        if (!useAshita)
+        {
+            startInfo.Verb = "runas";
+        }
 
         try
         {
@@ -74,7 +86,7 @@ public sealed class GameLauncher(AppPaths paths)
         {
             throw new OperationCanceledException(
                 "The game wasn't started because the Windows permission prompt was declined. " +
-                "Ashita needs administrator rights to start FINAL FANTASY XI.");
+                "FINAL FANTASY XI needs administrator rights to start from LocalXI.");
         }
     }
 

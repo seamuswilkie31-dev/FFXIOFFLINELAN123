@@ -87,6 +87,32 @@ public class ComponentInstallerTests : IDisposable
     }
 
     [Fact]
+    public async Task ZipUpgrade_KeepsOnlyTheNestedPreservedFolder()
+    {
+        // Ashita keeps its game-memory tables in config/ashita (must update) and user settings in config/addons (must keep).
+        var paths = new AppPaths(Path.Combine(_root, "data"), Path.Combine(_root, "user"));
+        paths.EnsureCreated();
+        var v1 = MakeZip(("pkg/Ashita-cli.exe", "v1"), ("pkg/config/ashita/ashita.pointers.ini", "old pointers"));
+        var v2 = MakeZip(("pkg/Ashita-cli.exe", "v2"), ("pkg/config/ashita/ashita.pointers.ini", "new pointers"));
+        ComponentSpec Ashita(string version, byte[] zip) => new()
+        {
+            Id = "ashita", Name = "Ashita", Version = version, Kind = ComponentKind.Zip, Url = "https://example.invalid/a.zip",
+            Sha256 = Convert.ToHexStringLower(SHA256.HashData(zip)), InstallDir = "ashita", StripTopFolder = true,
+            Preserve = ["config/addons"], Probe = "Ashita-cli.exe",
+        };
+
+        await Install(paths, Ashita("1", v1), v1);
+        var addonSettings = Path.Combine(paths.Runtime, "ashita", "config", "addons", "fps", "Seamus_1", "settings.lua");
+        Directory.CreateDirectory(Path.GetDirectoryName(addonSettings)!);
+        File.WriteAllText(addonSettings, "mine");
+
+        await Install(paths, Ashita("2", v2), v2);
+
+        Assert.Equal("new pointers", File.ReadAllText(Path.Combine(paths.Runtime, "ashita", "config", "ashita", "ashita.pointers.ini")));
+        Assert.Equal("mine", File.ReadAllText(addonSettings));
+    }
+
+    [Fact]
     public async Task Download_WithWrongHash_IsRejected()
     {
         var paths = new AppPaths(Path.Combine(_root, "data"), Path.Combine(_root, "user"));

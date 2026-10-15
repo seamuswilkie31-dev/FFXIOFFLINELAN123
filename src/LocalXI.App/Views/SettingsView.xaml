@@ -56,6 +56,9 @@
                             </ComboBox>
                         </StackPanel>
                     </WrapPanel>
+                    <CheckBox Content="Start the game through Ashita (addons and the window settings above)" IsChecked="{Binding UseAshita}" Margin="0,4,0,2" />
+                    <TextBlock Style="{StaticResource Hint}" Margin="28,0,0,0"
+                               Text="If the game freezes after a Square Enix update, turn this off until LocalXI ships a newer Ashita. The game then starts through xiloader alone and uses its own settings from the FINAL FANTASY XI Config tool." />
                 </StackPanel>
             </Border>
 

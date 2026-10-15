@@ -42,6 +42,9 @@ public sealed partial class SettingsViewModel(MainViewModel main) : PageViewMode
     private WindowMode _windowMode;
 
     [ObservableProperty]
+    private bool _useAshita;
+
+    [ObservableProperty]
     private bool _lazyZones;
 
     [ObservableProperty]
@@ -75,6 +78,7 @@ public sealed partial class SettingsViewModel(MainViewModel main) : PageViewMode
         Width = config.Window.Width;
         Height = config.Window.Height;
         WindowMode = config.Window.Mode;
+        UseAshita = config.UseAshita;
         Era = config.Server.Era;
         LazyZones = config.Server.LazyZones;
         AllowOlderClients = config.Server.AllowOlderClients;
@@ -153,6 +157,7 @@ public sealed partial class SettingsViewModel(MainViewModel main) : PageViewMode
         config.Window.Width = Math.Clamp(Width, 640, 7680);
         config.Window.Height = Math.Clamp(Height, 480, 4320);
         config.Window.Mode = WindowMode;
+        config.UseAshita = UseAshita;
         var eraChanged = Era != config.Server.Era;
         config.Server.Era = Era;
         config.Server.LazyZones = LazyZones;

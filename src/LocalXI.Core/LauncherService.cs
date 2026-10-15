@@ -287,9 +287,13 @@ public sealed class LauncherService : IAsyncDisposable
             await StartServerAsync(progress, cancellationToken);
         }
 
-        progress?.Report("Launching the game - Windows will ask for permission (Ashita needs it)...");
-        Game.WriteBootConfig(GameServerAddress, Config.Account, Config.Window);
-        Game.Launch();
+        progress?.Report("Launching the game - Windows will ask for permission...");
+        if (Config.UseAshita)
+        {
+            Game.WriteBootConfig(GameServerAddress, Config.Account, Config.Window);
+        }
+
+        Game.Launch(Config.UseAshita, GameServerAddress, Config.Account);
     }
 
     /// <summary>Called once the game window closes: back up and, unless friends are still online, shut the server down.</summary>

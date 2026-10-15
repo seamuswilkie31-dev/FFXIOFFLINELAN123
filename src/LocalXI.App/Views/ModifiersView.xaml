@@ -205,12 +205,12 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="4,12,4,4">
                         <TextBlock Text="GM level" Style="{StaticResource SectionTitle}" />
-                        <StackPanel Orientation="Horizontal">
-                            <ComboBox ItemsSource="{Binding GmLevels}" SelectedItem="{Binding SelectedGmLevel}" DisplayMemberPath="Label" MinWidth="460" />
-                            <Button Style="{StaticResource PrimaryButton}" Content="Save GM level" Command="{Binding SaveGmLevelCommand}" Margin="10,0,0,0" Padding="16,7" />
-                        </StackPanel>
+                        <ComboBox ItemsSource="{Binding GmLevels}" SelectedItem="{Binding SelectedGmLevel}" DisplayMemberPath="Label" MinWidth="460" HorizontalAlignment="Left" />
+                        <CheckBox Content="GM mode on when logging in: the GM icon and the GM name colour" IsChecked="{Binding GmMode}" Margin="0,10,0,0" />
+                        <CheckBox Content="Show the New Adventurer &quot;?&quot; icon" IsChecked="{Binding NewAdventurer}" Margin="0,6,0,0" />
+                        <Button Style="{StaticResource PrimaryButton}" Content="Save GM settings" Command="{Binding SaveGmCommand}" HorizontalAlignment="Left" Margin="0,12,0,0" Padding="16,7" />
                         <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,8,0,18"
-                                   Text="A GM types commands in the chat box starting with ! (for example !additem 4096, !goto Name, !zone 230, !speed 80, !hide, !togglegm for the GM icon). Level 1 covers almost everything; higher levels only add server and developer tools. Set it back to 0 to make the character a normal player again." />
+                                   Text="A GM types commands in the chat box starting with ! (for example !additem 4096, !goto Name, !zone 230, !speed 80, !hide). Level 1 covers almost everything; higher levels only add server and developer tools. In game, !togglegm switches GM mode on and off. The game shows one icon by a name: in GM mode the GM icon wins, otherwise the New Adventurer ? shows until 240 hours of play unless it's switched off here. Set the level back to 0 to make the character a normal player again." />
 
                         <TextBlock Text="Judge's outfit" Style="{StaticResource SectionTitle}" />
                         <Button Content="Add Judge's outfit to inventory" Command="{Binding AddJudgeOutfitCommand}" HorizontalAlignment="Left" />

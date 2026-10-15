@@ -19,6 +19,9 @@ public sealed record JobLevel(int JobId, string Column, int Level, bool Unlocked
 
 public sealed record FameRegion(string Column, string Name, bool Classic);
 
+/// <summary>GM level 0-5, GM mode (icon and name colour) at login, and the New Adventurer "?" icon.</summary>
+public sealed record GmSettings(int Level, bool GmMode, bool NewAdventurer);
+
 /// <summary>
 /// Edits a character's saved data the way LandSandBoat itself stores it. The game server keeps logged-in characters
 /// in memory and writes them back on logout, so edits are only safe while the character is offline; callers stop
@@ -326,21 +329,40 @@ public sealed class CharacterEditor(GameDatabase database)
     /// <summary>Judge's helm, cuirass, gauntlets, cuisses and greaves: the GM outfit (item_basic flags GM_ONLY).</summary>
     public static readonly IReadOnlyList<int> JudgeOutfit = [12523, 12551, 12679, 12807, 12935];
 
+    /// <summary>
+    /// chars.settings holds the client's saved config (SAVE_CONF in LandSandBoat's common/mmo.h);
+    /// bit 26 is NewAdventurerOffFlg. The server sets it after NEW_ADVENTURER_PLAYTIME_LIMIT hours.
+    /// </summary>
+    private const long SettingNewAdventurerOff = 1L << 26;
+
     public async Task<int> GetGmLevelAsync(uint charId, CancellationToken cancellationToken = default) =>
         Convert.ToInt32(await database.ScalarAsync("SELECT gmlevel FROM chars WHERE charid = @id", Id(charId), cancellationToken) ?? 0);
 
-    /// <summary>
-    /// Sets the GM level (0 = player). Taking it away also switches off GM mode and hiding, which the server
-    /// remembers in char_flags across logins.
-    /// </summary>
-    public async Task SetGmLevelAsync(uint charId, int level, CancellationToken cancellationToken = default)
+    public async Task<GmSettings> GetGmSettingsAsync(uint charId, CancellationToken cancellationToken = default)
     {
-        level = Math.Clamp(level, 0, MaxGmLevel);
-        await database.ExecuteAsync("UPDATE chars SET gmlevel = @level WHERE charid = @id", Args(charId, ("@level", level)), cancellationToken);
-        if (level == 0)
-        {
-            await database.ExecuteAsync("UPDATE char_flags SET gmModeEnabled = 0, gmHiddenEnabled = 0 WHERE charid = @id", Id(charId), cancellationToken);
-        }
+        var rows = await database.QueryAsync(
+            "SELECT c.gmlevel, COALESCE(f.gmModeEnabled, 0), c.settings FROM chars c LEFT JOIN char_flags f ON f.charid = c.charid WHERE c.charid = @id",
+            r => new GmSettings(Convert.ToInt32(r.GetValue(0)), Convert.ToInt32(r.GetValue(1)) != 0, (Convert.ToInt64(r.GetValue(2)) & SettingNewAdventurerOff) == 0),
+            Id(charId), cancellationToken);
+        return rows.FirstOrDefault() ?? new GmSettings(0, false, true);
+    }
+
+    /// <summary>
+    /// Sets the GM level (0 = player), whether GM mode (the GM icon and name colour, what !togglegm switches) is on
+    /// at login, and whether the New Adventurer "?" shows. A player can't be in GM mode or hidden, so level 0
+    /// switches both off.
+    /// </summary>
+    public async Task SetGmSettingsAsync(uint charId, GmSettings settings, CancellationToken cancellationToken = default)
+    {
+        var level = Math.Clamp(settings.Level, 0, MaxGmLevel);
+        var gmMode = level > 0 && settings.GmMode;
+        await database.ExecuteAsync(
+            "UPDATE chars SET gmlevel = @level, settings = IF(@newAdventurer, settings & ~@bit, settings | @bit) WHERE charid = @id",
+            Args(charId, ("@level", level), ("@newAdventurer", settings.NewAdventurer), ("@bit", SettingNewAdventurerOff)), cancellationToken);
+        await database.ExecuteAsync(
+            "INSERT INTO char_flags (charid, gmModeEnabled, gmHiddenEnabled) VALUES (@id, @mode, 0) " +
+            "ON DUPLICATE KEY UPDATE gmModeEnabled = @mode, gmHiddenEnabled = IF(@level = 0, 0, gmHiddenEnabled)",
+            Args(charId, ("@level", level), ("@mode", gmMode ? 1 : 0)), cancellationToken);
     }
 
     /// <summary>Adds the pieces of the Judge's outfit the character doesn't already own. Returns how many were added.</summary>

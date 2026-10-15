@@ -130,6 +130,12 @@ public sealed partial class ModifiersViewModel(MainViewModel main) : PageViewMod
     [ObservableProperty]
     private GmLevelOption? _selectedGmLevel;
 
+    [ObservableProperty]
+    private bool _gmMode;
+
+    [ObservableProperty]
+    private bool _newAdventurer;
+
     public override void OnShown()
     {
         OnPropertyChanged(nameof(CanEdit));
@@ -216,7 +222,10 @@ public sealed partial class ModifiersViewModel(MainViewModel main) : PageViewMod
                 ? "The server's home point list couldn't be read."
                 : $"{registered} of {catalog.HomePoints.Count} home point crystals registered.";
 
-            SelectedGmLevel = GmLevels[Math.Clamp(await editor.GetGmLevelAsync(character.Id), 0, CharacterEditor.MaxGmLevel)];
+            var gm = await editor.GetGmSettingsAsync(character.Id);
+            SelectedGmLevel = GmLevels[Math.Clamp(gm.Level, 0, CharacterEditor.MaxGmLevel)];
+            GmMode = gm.GmMode;
+            NewAdventurer = gm.NewAdventurer;
         }
         catch (Exception e)
         {
@@ -394,9 +403,10 @@ public sealed partial class ModifiersViewModel(MainViewModel main) : PageViewMod
             (editor, id) => editor.SetHomePointsAsync(id, Launcher.Catalog.HomePoints.Select(h => h.Index), registered: false));
 
     [RelayCommand]
-    private Task SaveGmLevelAsync() =>
+    private Task SaveGmAsync() =>
         SelectedGmLevel is { } level
-            ? EditAsync(level.Level == 0 ? "GM rights removed." : $"GM level set to {level.Level}.", (editor, id) => editor.SetGmLevelAsync(id, level.Level))
+            ? EditAsync(level.Level == 0 ? "GM rights removed." : $"GM level {level.Level} saved{(GmMode ? ", with GM mode on" : "")}.",
+                (editor, id) => editor.SetGmSettingsAsync(id, new GmSettings(level.Level, GmMode, NewAdventurer)))
             : Task.CompletedTask;
 
     [RelayCommand]

@@ -100,7 +100,9 @@ The **Modifiers** page edits the characters on your own world, one character at 
 | Fame | Set fame level 1–9 for San d'Oria, Bastok, Windurst and Norg |
 | Quests | Set any quest to not started, accepted or completed (the quest log only; no rewards) |
 | Home points | Register every home point crystal at once, so you can warp between them straight away |
-| GM | Make the character a GM (level 0–5) to use LandSandBoat's `!` chat commands, and add the Judge's outfit |
+| Storage | Unlock every storage container at 80 slots: Gobbie bag, Mog Safe and Safe 2, Mog Locker, Satchel, Sack, Case and Wardrobes |
+| Magic | Learn every White Magic, Black Magic, Blue Magic, Ninjutsu, song, summon and Geomancy spell (pick which), and every trust |
+| GM | Make the character a GM (level 0–5) to use LandSandBoat's `!` chat commands, switch GM mode or the New Adventurer "?" icon, and add the Judge's outfit |
 
 The same page sets the **EXP rate** (×1 to ×3). It applies to the whole world, because LandSandBoat has one
 rate for everyone.

@@ -44,10 +44,20 @@ public sealed partial class QuestRow(QuestInfo quest, QuestState original) : Obs
     private QuestState _state = original;
 }
 
+public sealed partial class SpellGroupRow(SpellGroupCount count) : ObservableObject
+{
+    public int Group { get; } = count.Group;
+    public string Label { get; } = $"{count.Name}  ({count.Learned} of {count.Total} learned)";
+
+    [ObservableProperty]
+    private bool _selected;
+}
+
 public sealed record GmLevelOption(int Level, string Label);
 
 /// <summary>
-/// Per-character editing (inventory, gil, jobs, fame, quests, home points, GM level) plus the world's EXP rate.
+/// Per-character editing (inventory, gil, jobs, fame, quests, home points, storage, spells and trusts, GM settings)
+/// plus the world's EXP rate.
 /// Edits need the server stopped; the first one each session backs everything up.
 /// </summary>
 public sealed partial class ModifiersViewModel(MainViewModel main) : PageViewModel(main)
@@ -60,6 +70,7 @@ public sealed partial class ModifiersViewModel(MainViewModel main) : PageViewMod
     public ObservableCollection<JobRow> JobRows { get; } = [];
     public ObservableCollection<FameRow> FameRows { get; } = [];
     public ObservableCollection<QuestRow> Quests { get; } = [];
+    public ObservableCollection<SpellGroupRow> SpellRows { get; } = [];
 
     public IReadOnlyList<double> ExpRates => ServerSettingsFiles.ExpRates;
     public IReadOnlyList<int> FameLevels { get; } = Enumerable.Range(1, 9).ToList();
@@ -126,6 +137,12 @@ public sealed partial class ModifiersViewModel(MainViewModel main) : PageViewMod
 
     [ObservableProperty]
     private string _homePointSummary = "";
+
+    [ObservableProperty]
+    private string _storageSummary = "";
+
+    [ObservableProperty]
+    private string _trustSummary = "";
 
     [ObservableProperty]
     private GmLevelOption? _selectedGmLevel;
@@ -221,6 +238,27 @@ public sealed partial class ModifiersViewModel(MainViewModel main) : PageViewMod
             HomePointSummary = catalog.HomePoints.Count == 0
                 ? "The server's home point list couldn't be read."
                 : $"{registered} of {catalog.HomePoints.Count} home point crystals registered.";
+
+            var storage = await editor.GetStorageAsync(character.Id);
+            StorageSummary = string.Join("\n",
+                $"Gobbie bag (inventory): {storage.Inventory} slots",
+                $"Mog Safe and Mog Safe 2: {storage.Safe} slots each",
+                $"Mog Locker: {(storage.LockerLeased && storage.Locker > 0 ? $"{storage.Locker} slots" : "not leased")}",
+                $"Mog Satchel: {storage.Satchel} slots",
+                $"Mog Sack: {storage.Sack} slots",
+                $"Mog Case: {storage.Case} slots",
+                $"Mog Wardrobes 1-8: {storage.Wardrobes} slots each");
+
+            var selectedGroups = SpellRows.Where(r => r.Selected).Select(r => r.Group).ToHashSet();
+            var spells = await editor.GetSpellCountsAsync(character.Id);
+            SpellRows.Clear();
+            foreach (var group in spells.Where(s => s.Group != CharacterEditor.TrustGroup))
+            {
+                SpellRows.Add(new SpellGroupRow(group) { Selected = selectedGroups.Contains(group.Group) });
+            }
+
+            var trusts = spells.First(s => s.Group == CharacterEditor.TrustGroup);
+            TrustSummary = $"{trusts.Learned} of {trusts.Total} trusts learned.";
 
             var gm = await editor.GetGmSettingsAsync(character.Id);
             SelectedGmLevel = GmLevels[Math.Clamp(gm.Level, 0, CharacterEditor.MaxGmLevel)];
@@ -401,6 +439,27 @@ public sealed partial class ModifiersViewModel(MainViewModel main) : PageViewMod
     private Task ClearHomePointsAsync() =>
         EditAsync("Home point registrations cleared.",
             (editor, id) => editor.SetHomePointsAsync(id, Launcher.Catalog.HomePoints.Select(h => h.Index), registered: false));
+
+    [RelayCommand]
+    private Task UnlockStorageAsync() =>
+        EditAsync($"Every storage container is now {CharacterEditor.MaxContainerSize} slots.", (editor, id) => editor.UnlockAllStorageAsync(id));
+
+    [RelayCommand]
+    private Task LearnSpellsAsync()
+    {
+        var groups = SpellRows.Where(r => r.Selected).Select(r => r.Group).ToList();
+        if (groups.Count == 0)
+        {
+            Main.Status = "Tick the kinds of magic to learn first.";
+            return Task.CompletedTask;
+        }
+
+        return EditAsync("Spells learned.", (editor, id) => editor.LearnSpellGroupsAsync(id, groups));
+    }
+
+    [RelayCommand]
+    private Task LearnTrustsAsync() =>
+        EditAsync("Every trust learned.", (editor, id) => editor.LearnSpellGroupsAsync(id, [CharacterEditor.TrustGroup]));
 
     [RelayCommand]
     private Task SaveGmAsync() =>

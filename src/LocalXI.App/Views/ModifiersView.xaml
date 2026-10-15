@@ -201,6 +201,39 @@
                 </StackPanel>
             </TabItem>
 
+            <TabItem Header="Storage">
+                <StackPanel Margin="4,12,4,4">
+                    <TextBlock Text="{Binding StorageSummary}" Margin="0,0,0,12" LineHeight="22" />
+                    <Button Style="{StaticResource PrimaryButton}" Content="Unlock all storage (80 slots each)" Command="{Binding UnlockStorageCommand}" HorizontalAlignment="Left" />
+                    <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,10,0,0"
+                               Text="Sets the Gobbie bag, Mog Safe, Mog Safe 2, Mog Locker, Mog Satchel, Mog Sack, Mog Case and all eight Mog Wardrobes to 80 slots, the most the game shows. The Mog Locker also gets a lease for every area that never runs out. The Mog House's own Storage depends on the furniture placed there, so it isn't changed." />
+                </StackPanel>
+            </TabItem>
+
+            <TabItem Header="Magic">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="4,12,4,4">
+                        <TextBlock Text="Spells" Style="{StaticResource SectionTitle}" />
+                        <ItemsControl ItemsSource="{Binding SpellRows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Content="{Binding Label}" IsChecked="{Binding Selected}" Margin="0,3" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Button Style="{StaticResource PrimaryButton}" Content="Learn ticked spells" Command="{Binding LearnSpellsCommand}" HorizontalAlignment="Left" Margin="0,10,0,0" />
+                        <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,8,0,20"
+                                   Text="Adds every spell of the ticked kinds to the character's spell list, as if each scroll had been used. Casting still needs a job and level that can use the spell. In classic mode the server ignores spells from later expansions (Geomancy, and Abyssea and Adoulin spells); they stay learned and appear if the world is switched to Modern." />
+
+                        <TextBlock Text="Trusts" Style="{StaticResource SectionTitle}" />
+                        <TextBlock Text="{Binding TrustSummary}" Margin="0,0,0,8" />
+                        <Button Style="{StaticResource PrimaryButton}" Content="Learn every trust" Command="{Binding LearnTrustsCommand}" HorizontalAlignment="Left" />
+                        <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,8,0,0"
+                                   Text="Trusts are cast from the Trust magic list and need no permit. Without the Rhapsody key items from Rhapsodies of Vana'diel, up to three can be called at once (GMs in GM mode aren't limited)." />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <TabItem Header="GM">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="4,12,4,4">

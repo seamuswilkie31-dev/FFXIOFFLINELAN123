@@ -44,8 +44,9 @@ These need the game client:
 - [ ] Ctrl+C shutdown saves a logged-in character (shutdown itself is verified, with nobody online)
 - [ ] Classic era in-game: level cap 75, later-expansion areas closed
 - [ ] Close the game → automatic backup → server stop
-- [ ] Modifiers changes as seen in game (gil, items, job levels, fame, quest log, home points, EXP rate, GM
-  commands and the Judge's outfit)
+- [ ] Modifiers changes as seen in game (gil, items, job levels, fame, quest log, home points, EXP rate,
+  storage sizes and the Mog Locker, learned spells and trusts, GM mode and the New Adventurer icon). The Judge's
+  outfit has been worn in game.
 - [ ] Host mode: a second PC on Radmin VPN creates an account from Join setup and plays
 - [ ] Firewall rules: friends connect after **Allow friends through Windows Firewall**
 - [ ] Registry repair on a copied install

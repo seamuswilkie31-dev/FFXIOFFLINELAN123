@@ -22,6 +22,12 @@ public sealed record FameRegion(string Column, string Name, bool Classic);
 /// <summary>GM level 0-5, GM mode (icon and name colour) at login, and the New Adventurer "?" icon.</summary>
 public sealed record GmSettings(int Level, bool GmMode, bool NewAdventurer);
 
+/// <summary>Slots in each storage container (char_storage); Mog Safe 2 shares the Mog Safe's size.</summary>
+public sealed record StorageSizes(int Inventory, int Safe, int Locker, bool LockerLeased, int Satchel, int Sack, int Case, int Wardrobes);
+
+/// <summary>A spell_list group (xi.magic.spellGroup) with how many of its player spells a character knows.</summary>
+public sealed record SpellGroupCount(int Group, string Name, int Total, int Learned);
+
 /// <summary>
 /// Edits a character's saved data the way LandSandBoat itself stores it. The game server keeps logged-in characters
 /// in memory and writes them back on logout, so edits are only safe while the character is offline; callers stop
@@ -319,6 +325,106 @@ public sealed class CharacterEditor(GameDatabase database)
         await database.ExecuteAsync(
             "INSERT INTO char_unlocks (charid, homepoints) VALUES (@id, @blob) ON DUPLICATE KEY UPDATE homepoints = @blob",
             Args(charId, ("@blob", blob)), cancellationToken);
+    }
+
+    // ------------------------------------------------------------ storage
+
+    /// <summary>The largest container the game client shows.</summary>
+    public const int MaxContainerSize = 80;
+
+    private const string LockerExpiryVar = "mog-locker-expiry-timestamp";
+    private const string LockerAccessVar = "mog-locker-access-type";
+
+    public async Task<StorageSizes> GetStorageAsync(uint charId, CancellationToken cancellationToken = default)
+    {
+        var leased = Convert.ToInt64(await database.ScalarAsync(
+            "SELECT COUNT(*) FROM char_vars WHERE charid = @id AND varname = @var AND value > 0", Args(charId, ("@var", LockerExpiryVar)), cancellationToken)) > 0;
+        var rows = await database.QueryAsync(
+            "SELECT inventory, safe, locker, satchel, sack, `case`, " +
+            "LEAST(wardrobe, wardrobe2, wardrobe3, wardrobe4, wardrobe5, wardrobe6, wardrobe7, wardrobe8) FROM char_storage WHERE charid = @id",
+            r => new StorageSizes(Convert.ToInt32(r.GetValue(0)), Convert.ToInt32(r.GetValue(1)), Convert.ToInt32(r.GetValue(2)), leased,
+                Convert.ToInt32(r.GetValue(3)), Convert.ToInt32(r.GetValue(4)), Convert.ToInt32(r.GetValue(5)), Convert.ToInt32(r.GetValue(6))),
+            Id(charId), cancellationToken);
+        return rows.FirstOrDefault() ?? new StorageSizes(30, 50, 0, leased, 0, 0, 80, 80);
+    }
+
+    /// <summary>
+    /// Makes every container 80 slots: Gobbie bag, Mog Safe (and Safe 2), Mog Locker, Satchel, Sack, Case and the
+    /// wardrobes. The Mog Locker also needs a lease (moghouse.lua keeps it in char vars), so it gets an all-areas
+    /// lease that runs to the end of the server's timestamp range. The Mog House "Storage" container is sized by
+    /// the furniture placed there, so it isn't changed.
+    /// </summary>
+    public async Task UnlockAllStorageAsync(uint charId, CancellationToken cancellationToken = default)
+    {
+        await using var connection = await database.OpenAsync(cancellationToken: cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        string[] columns = ["inventory", "safe", "locker", "satchel", "sack", "`case`", "wardrobe", "wardrobe2", "wardrobe3", "wardrobe4", "wardrobe5", "wardrobe6", "wardrobe7", "wardrobe8"];
+        await using (var storage = new MySqlCommand(
+            $"INSERT INTO char_storage (charid, {string.Join(", ", columns)}) VALUES (@id{string.Concat(columns.Select(_ => ", @max"))}) " +
+            $"ON DUPLICATE KEY UPDATE {string.Join(", ", columns.Select(c => $"{c} = @max"))}", connection, transaction))
+        {
+            storage.Parameters.AddWithValue("@id", charId);
+            storage.Parameters.AddWithValue("@max", MaxContainerSize);
+            await storage.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        await using (var lease = new MySqlCommand(
+            "REPLACE INTO char_vars (charid, varname, value, expiry) VALUES (@id, @expiryVar, @forever, 0), (@id, @accessVar, 1, 0)", connection, transaction))
+        {
+            lease.Parameters.AddWithValue("@id", charId);
+            lease.Parameters.AddWithValue("@expiryVar", LockerExpiryVar);
+            lease.Parameters.AddWithValue("@accessVar", LockerAccessVar);
+            lease.Parameters.AddWithValue("@forever", int.MaxValue);
+            await lease.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    // ------------------------------------------------------------ spells and trusts
+
+    /// <summary>spell_list groups players learn spells from (xi.magic.spellGroup), in menu order.</summary>
+    public static readonly IReadOnlyList<(int Group, string Name)> SpellGroups =
+    [
+        (6, "White Magic"), (2, "Black Magic"), (3, "Blue Magic"), (4, "Ninjutsu"), (1, "Songs"), (5, "Summoning"), (7, "Geomancy"),
+    ];
+
+    public const int TrustGroup = 8;
+
+    // Spells no job can learn (monster-only abilities and unused entries) have every job level at zero.
+    private const string PlayerSpells = "HEX(s.jobs) <> REPEAT('0', 44)";
+
+    public async Task<IReadOnlyList<SpellGroupCount>> GetSpellCountsAsync(uint charId, CancellationToken cancellationToken = default)
+    {
+        var counts = (await database.QueryAsync(
+            $"SELECT s.`group`, COUNT(*), COUNT(c.spellid) FROM spell_list s " +
+            $"LEFT JOIN char_spells c ON c.spellid = s.spellid AND c.charid = @id WHERE {PlayerSpells} GROUP BY s.`group`",
+            r => (Group: Convert.ToInt32(r.GetValue(0)), Total: Convert.ToInt32(r.GetValue(1)), Learned: Convert.ToInt32(r.GetValue(2))),
+            Id(charId), cancellationToken)).ToDictionary(c => c.Group);
+        return SpellGroups.Append((Group: TrustGroup, Name: "Trusts"))
+            .Select(g => counts.TryGetValue(g.Group, out var c) ? new SpellGroupCount(g.Group, g.Name, c.Total, c.Learned) : new SpellGroupCount(g.Group, g.Name, 0, 0))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Learns every player spell in the given groups. Spells from expansions a classic world switches off stay
+    /// stored but unused: the server only loads learned spells whose content is enabled (LoadFromCharSpellsSQL).
+    /// Returns how many spells were new.
+    /// </summary>
+    public Task<int> LearnSpellGroupsAsync(uint charId, IEnumerable<int> groups, CancellationToken cancellationToken = default)
+    {
+        var allowed = SpellGroups.Select(g => g.Group).Append(TrustGroup).ToHashSet();
+        var chosen = groups.Where(allowed.Contains).Distinct().ToList();
+        if (chosen.Count == 0)
+        {
+            return Task.FromResult(0);
+        }
+
+        return database.ExecuteAsync(
+            $"INSERT IGNORE INTO char_spells (charid, spellid) SELECT @id, s.spellid FROM spell_list s " +
+            $"WHERE s.`group` IN ({string.Join(", ", chosen)}) AND {PlayerSpells}",
+            Id(charId), cancellationToken);
     }
 
     // ------------------------------------------------------------ GM

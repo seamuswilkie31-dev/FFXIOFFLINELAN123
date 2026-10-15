@@ -16,6 +16,7 @@ public sealed partial class MainViewModel : ObservableObject
         Logs = new LogsViewModel(this);
         Play = new PlayViewModel(this);
         Saves = new SavesViewModel(this);
+        Modifiers = new ModifiersViewModel(this);
         Network = new NetworkViewModel(this);
         Settings = new SettingsViewModel(this);
 
@@ -30,6 +31,7 @@ public sealed partial class MainViewModel : ObservableObject
     public LauncherService Launcher { get; }
     public PlayViewModel Play { get; }
     public SavesViewModel Saves { get; }
+    public ModifiersViewModel Modifiers { get; }
     public NetworkViewModel Network { get; }
     public SettingsViewModel Settings { get; }
     public LogsViewModel Logs { get; }
@@ -58,6 +60,7 @@ public sealed partial class MainViewModel : ObservableObject
         CurrentPage = value switch
         {
             "Saves" => Saves,
+            "Modifiers" => Modifiers,
             "Network" => Network,
             "Settings" => Settings,
             "Logs" => Logs,

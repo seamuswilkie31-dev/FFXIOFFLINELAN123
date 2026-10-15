@@ -15,6 +15,9 @@
         <DataTemplate DataType="{x:Type vm:SavesViewModel}">
             <views:SavesView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ModifiersViewModel}">
+            <views:ModifiersView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:NetworkViewModel}">
             <views:NetworkView />
         </DataTemplate>
@@ -50,6 +53,8 @@
                                      IsChecked="{Binding CurrentPageName, Converter={StaticResource EnumEquals}, ConverterParameter=Play}" />
                         <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Content="💾  Saves"
                                      IsChecked="{Binding CurrentPageName, Converter={StaticResource EnumEquals}, ConverterParameter=Saves}" />
+                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Content="🛠  Modifiers"
+                                     IsChecked="{Binding CurrentPageName, Converter={StaticResource EnumEquals}, ConverterParameter=Modifiers}" />
                         <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Content="🌐  Network"
                                      IsChecked="{Binding CurrentPageName, Converter={StaticResource EnumEquals}, ConverterParameter=Network}" />
                         <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Content="⚙  Settings"

@@ -90,6 +90,9 @@ public sealed class ServerOptions
 {
     public GameEra Era { get; set; } = GameEra.Classic75;
 
+    /// <summary>Combat EXP multiplier for the whole world (LandSandBoat has no per-character rate).</summary>
+    public double ExpRate { get; set; } = 1.0;
+
     /// <summary>Load zones on demand: much faster start-up and less memory for small groups.</summary>
     public bool LazyZones { get; set; } = true;
 

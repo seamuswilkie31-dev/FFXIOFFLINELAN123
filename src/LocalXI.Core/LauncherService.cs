@@ -18,6 +18,8 @@ public sealed class LauncherService : IAsyncDisposable
 
     private LsbServer? _server;
     private ServerPackage? _package;
+    private GameCatalog? _catalog;
+    private bool _backedUpForEdits;
 
     public LauncherService(AppPaths paths)
     {
@@ -57,6 +59,11 @@ public sealed class LauncherService : IAsyncDisposable
 
     public SaveManager Saves => new(Paths, Database, MariaDb, ServerPackage);
 
+    /// <summary>Home points, quests and fame thresholds read from the installed server's scripts.</summary>
+    public GameCatalog Catalog => _catalog ??= GameCatalog.Load(ServerDirectory);
+
+    public CharacterEditor Characters => new(Database);
+
     public LoginClient LoginClient => LoginClient.ForXiloaderVersion(Manifest["xiloader"].Version);
 
     /// <summary>The address the game's loader connects to.</summary>
@@ -75,6 +82,7 @@ public sealed class LauncherService : IAsyncDisposable
     {
         _package = null;
         _server = null;
+        _catalog = null;
     }
 
     // ---------------------------------------------------------------- setup
@@ -256,10 +264,14 @@ public sealed class LauncherService : IAsyncDisposable
         progress?.Report("Starting the database...");
         await MariaDb.StartAsync(Database, cancellationToken);
 
-        // Only manage the module list in the downloaded server; a developer's own build keeps theirs.
+        // Only manage the module list and settings files in the downloaded server; a developer's own build keeps theirs.
         if (string.IsNullOrWhiteSpace(Config.Server.OverrideDirectory))
         {
             EraPresets.WriteModuleList(ServerDirectory);
+            if (!ServerSettingsFiles.ApplyExpRate(ServerDirectory, Config.Server.ExpRate))
+            {
+                Logs.Add("launcher", "The EXP rate couldn't be applied: settings/map.lua was edited by hand, or the server has no EXP_RATE setting.");
+            }
         }
 
         var era = EraPresets.Settings(Config.Server.Era);
@@ -342,6 +354,37 @@ public sealed class LauncherService : IAsyncDisposable
         progress?.Report("Stopping the database...");
         await MariaDb.StopAsync(Database);
         progress?.Report("Server stopped.");
+    }
+
+    // ---------------------------------------------------------------- character editing
+
+    /// <summary>
+    /// Gets ready to edit characters: the game server must be stopped (it keeps characters in memory and would write
+    /// over the changes), the database running, and, before the first change of each session, a backup of everything.
+    /// </summary>
+    public async Task BeginCharacterEditAsync(IProgress<string>? progress, CancellationToken cancellationToken = default)
+    {
+        if (!Config.RunsLocalServer)
+        {
+            throw new InvalidOperationException("While joining a friend, your characters live on their PC, so they can't be edited here.");
+        }
+
+        if (_server is { IsRunning: true })
+        {
+            throw new InvalidOperationException("Stop the server first (Play page). The game server keeps characters in memory and would overwrite the changes.");
+        }
+
+        await MariaDb.StartAsync(Database, cancellationToken);
+        if (!_backedUpForEdits)
+        {
+            progress?.Report("Backing up all characters before the first change...");
+            if (await BackupAsync("before-modify", progress, cancellationToken) is null)
+            {
+                throw new InvalidOperationException("The safety backup failed, so nothing was changed. See the Logs page.");
+            }
+
+            _backedUpForEdits = true;
+        }
     }
 
     // ---------------------------------------------------------------- saves

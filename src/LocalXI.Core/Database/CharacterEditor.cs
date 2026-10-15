@@ -10,7 +10,7 @@ public sealed record CharacterSummary(uint Id, string Name, string Account, int 
 
 public sealed record InventoryItem(int Slot, int ItemId, string Name, uint Quantity, bool Equipped);
 
-public sealed record ItemInfo(int ItemId, string Name, int StackSize, bool Rare, bool Ex);
+public sealed record ItemInfo(int ItemId, string Name, int StackSize, bool Rare, bool Ex, bool GmOnly);
 
 public sealed record JobLevel(int JobId, string Column, int Level, bool Unlocked)
 {
@@ -30,6 +30,7 @@ public sealed class CharacterEditor(GameDatabase database)
     private const int InventoryLocation = 0;
     private const int LinkshellType = 2;
     private const int CurrencyType = 8;
+    private const long FlagGmOnly = 0x0002;
     private const long FlagEx = 0x4000;
     private const long FlagRare = 0x8000;
     private const long FlagNoRareCheck = 0x20000;
@@ -317,13 +318,67 @@ public sealed class CharacterEditor(GameDatabase database)
             Args(charId, ("@blob", blob)), cancellationToken);
     }
 
+    // ------------------------------------------------------------ GM
+
+    /// <summary>The highest level LandSandBoat's chat commands ask for (cmdprops permission in scripts/commands).</summary>
+    public const int MaxGmLevel = 5;
+
+    /// <summary>Judge's helm, cuirass, gauntlets, cuisses and greaves: the GM outfit (item_basic flags GM_ONLY).</summary>
+    public static readonly IReadOnlyList<int> JudgeOutfit = [12523, 12551, 12679, 12807, 12935];
+
+    public async Task<int> GetGmLevelAsync(uint charId, CancellationToken cancellationToken = default) =>
+        Convert.ToInt32(await database.ScalarAsync("SELECT gmlevel FROM chars WHERE charid = @id", Id(charId), cancellationToken) ?? 0);
+
+    /// <summary>
+    /// Sets the GM level (0 = player). Taking it away also switches off GM mode and hiding, which the server
+    /// remembers in char_flags across logins.
+    /// </summary>
+    public async Task SetGmLevelAsync(uint charId, int level, CancellationToken cancellationToken = default)
+    {
+        level = Math.Clamp(level, 0, MaxGmLevel);
+        await database.ExecuteAsync("UPDATE chars SET gmlevel = @level WHERE charid = @id", Args(charId, ("@level", level)), cancellationToken);
+        if (level == 0)
+        {
+            await database.ExecuteAsync("UPDATE char_flags SET gmModeEnabled = 0, gmHiddenEnabled = 0 WHERE charid = @id", Id(charId), cancellationToken);
+        }
+    }
+
+    /// <summary>Adds the pieces of the Judge's outfit the character doesn't already own. Returns how many were added.</summary>
+    public async Task<int> AddJudgeOutfitAsync(uint charId, CancellationToken cancellationToken = default)
+    {
+        if (await GetGmLevelAsync(charId, cancellationToken) == 0)
+        {
+            throw new InvalidOperationException("The Judge's outfit is GM-only gear. Set a GM level for this character first.");
+        }
+
+        var owned = (await database.QueryAsync(
+            "SELECT DISTINCT itemId FROM char_inventory WHERE charid = @id", r => Convert.ToInt32(r.GetValue(0)), Id(charId), cancellationToken)).ToHashSet();
+        var missing = JudgeOutfit.Where(id => !owned.Contains(id)).ToList();
+
+        var capacity = await GetInventoryCapacityAsync(charId, cancellationToken);
+        var used = Convert.ToInt32(await database.ScalarAsync(
+            "SELECT COUNT(*) FROM char_inventory WHERE charid = @id AND location = 0 AND slot BETWEEN 1 AND @capacity",
+            Args(charId, ("@capacity", capacity)), cancellationToken));
+        if (capacity - used < missing.Count)
+        {
+            throw new InvalidOperationException($"The outfit needs {missing.Count} free inventory slots and there are {capacity - used}. Remove something first.");
+        }
+
+        foreach (var itemId in missing)
+        {
+            await AddItemAsync(charId, itemId, 1, cancellationToken);
+        }
+
+        return missing.Count;
+    }
+
     // ------------------------------------------------------------ helpers
 
     private static ItemInfo ToItemInfo(MySqlDataReader r)
     {
         var flags = Convert.ToInt64(r.GetValue(3));
         return new ItemInfo(Convert.ToInt32(r.GetValue(0)), PrettyItem(r.GetString(1)), Convert.ToInt32(r.GetValue(2)),
-            (flags & FlagRare) != 0 && (flags & FlagNoRareCheck) == 0, (flags & FlagEx) != 0);
+            (flags & FlagRare) != 0 && (flags & FlagNoRareCheck) == 0, (flags & FlagEx) != 0, (flags & FlagGmOnly) != 0);
     }
 
     /// <summary>item_basic names are lower_snake_case ("pile_of_chocobo_bedding").</summary>

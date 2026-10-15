@@ -8,8 +8,8 @@ no config files. Play solo, host a world for friends on your home network or ove
 friend's world. Your characters are saved on your PC and can be carried to another PC as a single file.
 
 > **Status: early development.** Setup, the database, the full LandSandBoat server (from this repo's
-> published package), accounts and save files are tested on a real PC. Logging in and playing in-game is not
-> tested yet. See [docs/TESTING.md](docs/TESTING.md).
+> published package), accounts, save files, and logging in and playing are tested on one real PC. Hosting for
+> friends over a network is not tested yet. See [docs/TESTING.md](docs/TESTING.md).
 
 ## What you need
 
@@ -88,6 +88,25 @@ use **Saves → Import save** there. Your current characters are backed up autom
 can always be undone.
 
 Automatic backups are kept in `Documents\LocalXI\Backups`; exports go to `Documents\LocalXI\Saves`.
+
+## Changing characters
+
+The **Modifiers** page edits the characters on your own world, one character at a time:
+
+| Tab | What it does |
+|---|---|
+| Inventory | Set gil; search every item in the game and add it; remove items (not ones being worn) |
+| Jobs | Set job levels and unlock jobs (up to 75 in classic mode) |
+| Fame | Set fame level 1–9 for San d'Oria, Bastok, Windurst and Norg |
+| Quests | Set any quest to not started, accepted or completed (the quest log only; no rewards) |
+| Home points | Register every home point crystal at once, so you can warp between them straight away |
+| GM | Make the character a GM (level 0–5) to use LandSandBoat's `!` chat commands, and add the Judge's outfit |
+
+The same page sets the **EXP rate** (×1 to ×3). It applies to the whole world, because LandSandBoat has one
+rate for everyone.
+
+Changes are saved straight into the database, so the server has to be stopped while you make them (the page
+offers to stop it). Everything is backed up automatically before the first change each session.
 
 ## Troubleshooting
 

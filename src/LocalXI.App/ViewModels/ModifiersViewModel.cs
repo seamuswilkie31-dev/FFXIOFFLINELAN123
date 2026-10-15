@@ -44,8 +44,10 @@ public sealed partial class QuestRow(QuestInfo quest, QuestState original) : Obs
     private QuestState _state = original;
 }
 
+public sealed record GmLevelOption(int Level, string Label);
+
 /// <summary>
-/// Per-character editing (inventory, gil, jobs, fame, quests, home points) plus the world's EXP rate.
+/// Per-character editing (inventory, gil, jobs, fame, quests, home points, GM level) plus the world's EXP rate.
 /// Edits need the server stopped; the first one each session backs everything up.
 /// </summary>
 public sealed partial class ModifiersViewModel(MainViewModel main) : PageViewModel(main)
@@ -63,6 +65,17 @@ public sealed partial class ModifiersViewModel(MainViewModel main) : PageViewMod
     public IReadOnlyList<int> FameLevels { get; } = Enumerable.Range(1, 9).ToList();
     public IReadOnlyList<QuestState> QuestStates { get; } = Enum.GetValues<QuestState>();
     public IReadOnlyList<string> QuestAreas => GameCatalog.QuestAreaNames;
+
+    /// <summary>What each level unlocks, from the permission values in the server's scripts/commands.</summary>
+    public IReadOnlyList<GmLevelOption> GmLevels { get; } =
+    [
+        new(0, "0 - Player (no GM commands)"),
+        new(1, "1 - GM: almost every command (!additem, !goto, !zone, !speed, !hide...)"),
+        new(2, "2 - GM, plus a few combat checks"),
+        new(3, "3 - Senior GM, plus monster, fame and variable tools"),
+        new(4, "4 - Lead GM, plus !exec and script reloads"),
+        new(5, "5 - Administrator: everything, including developer tools"),
+    ];
 
     public bool CanEdit => Launcher.Config.RunsLocalServer && Launcher.Config.SetupComplete;
     public bool IsClassic => Launcher.Config.Server.Era == GameEra.Classic75;
@@ -113,6 +126,9 @@ public sealed partial class ModifiersViewModel(MainViewModel main) : PageViewMod
 
     [ObservableProperty]
     private string _homePointSummary = "";
+
+    [ObservableProperty]
+    private GmLevelOption? _selectedGmLevel;
 
     public override void OnShown()
     {
@@ -199,6 +215,8 @@ public sealed partial class ModifiersViewModel(MainViewModel main) : PageViewMod
             HomePointSummary = catalog.HomePoints.Count == 0
                 ? "The server's home point list couldn't be read."
                 : $"{registered} of {catalog.HomePoints.Count} home point crystals registered.";
+
+            SelectedGmLevel = GmLevels[Math.Clamp(await editor.GetGmLevelAsync(character.Id), 0, CharacterEditor.MaxGmLevel)];
         }
         catch (Exception e)
         {
@@ -374,4 +392,20 @@ public sealed partial class ModifiersViewModel(MainViewModel main) : PageViewMod
     private Task ClearHomePointsAsync() =>
         EditAsync("Home point registrations cleared.",
             (editor, id) => editor.SetHomePointsAsync(id, Launcher.Catalog.HomePoints.Select(h => h.Index), registered: false));
+
+    [RelayCommand]
+    private Task SaveGmLevelAsync() =>
+        SelectedGmLevel is { } level
+            ? EditAsync(level.Level == 0 ? "GM rights removed." : $"GM level set to {level.Level}.", (editor, id) => editor.SetGmLevelAsync(id, level.Level))
+            : Task.CompletedTask;
+
+    [RelayCommand]
+    private Task AddJudgeOutfitAsync() =>
+        EditAsync("Judge's outfit added to the inventory.", async (editor, id) =>
+        {
+            if (await editor.AddJudgeOutfitAsync(id) == 0)
+            {
+                throw new InvalidOperationException("This character already has every piece of the Judge's outfit.");
+            }
+        });
 }

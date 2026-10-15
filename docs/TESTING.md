@@ -2,10 +2,13 @@
 
 ## Verified (October 2026, Windows 10 22H2)
 
-- **Unit tests** (`dotnet test`, 59 tests): INI editing, password rules, client-version parsing, the
+- **Unit tests** (`dotnet test`, 76 tests): INI editing, password rules, client-version parsing, the
   component manifest, download hash checking, zip install/upgrade with preserved folders, era presets and
   data-pack ordering, the player-table list, server package detection, login-protocol replies, network adapter
-  classification, and Windows argument quoting.
+  classification, Windows argument quoting, and the character data layouts and server-script parsers the
+  Modifiers page uses.
+- **In game** with the October 2026 client: Ashita 4.3.2.1 and xiloader start the game, log in to the local
+  server, create a character and load into the world; the character is still there after logging out.
 - **The real server, end-to-end** (package `server-1f204df5e2`, built by this repo's workflow in 71 minutes),
   in a fresh portable folder:
   - all five components downloaded and hash-checked (about 500 MB in 1.5 minutes), the game data loaded in
@@ -40,8 +43,9 @@ These need the game client:
 
 - [ ] Ctrl+C shutdown saves a logged-in character (shutdown itself is verified, with nobody online)
 - [ ] Classic era in-game: level cap 75, later-expansion areas closed
-- [ ] Ashita + xiloader start the game with the generated `localxi.ini` (`Ashita-cli.exe localxi.ini`)
-- [ ] Create a character, play, close the game → automatic backup → stop
+- [ ] Close the game → automatic backup → server stop
+- [ ] Modifiers changes as seen in game (gil, items, job levels, fame, quest log, home points, EXP rate, GM
+  commands and the Judge's outfit)
 - [ ] Host mode: a second PC on Radmin VPN creates an account from Join setup and plays
 - [ ] Firewall rules: friends connect after **Allow friends through Windows Firewall**
 - [ ] Registry repair on a copied install

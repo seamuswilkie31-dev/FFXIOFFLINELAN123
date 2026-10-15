@@ -69,6 +69,7 @@
                                     <GridViewColumn Header="Stack" DisplayMemberBinding="{Binding StackSize}" Width="70" />
                                     <GridViewColumn Header="Rare" DisplayMemberBinding="{Binding Rare}" Width="70" />
                                     <GridViewColumn Header="Ex" DisplayMemberBinding="{Binding Ex}" Width="70" />
+                                    <GridViewColumn Header="GM only" DisplayMemberBinding="{Binding GmOnly}" Width="90" />
                                 </GridView>
                             </ListView.View>
                         </ListView>
@@ -198,6 +199,25 @@
                     <TextBlock Style="{StaticResource Hint}" Margin="0,10,0,0"
                                Text="Registers every home point crystal so you can warp between them from any crystal, without touching each one first. Uses the same records the game writes when you touch a crystal." />
                 </StackPanel>
+            </TabItem>
+
+            <TabItem Header="GM">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="4,12,4,4">
+                        <TextBlock Text="GM level" Style="{StaticResource SectionTitle}" />
+                        <StackPanel Orientation="Horizontal">
+                            <ComboBox ItemsSource="{Binding GmLevels}" SelectedItem="{Binding SelectedGmLevel}" DisplayMemberPath="Label" MinWidth="460" />
+                            <Button Style="{StaticResource PrimaryButton}" Content="Save GM level" Command="{Binding SaveGmLevelCommand}" Margin="10,0,0,0" Padding="16,7" />
+                        </StackPanel>
+                        <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,8,0,18"
+                                   Text="A GM types commands in the chat box starting with ! (for example !additem 4096, !goto Name, !zone 230, !speed 80, !hide, !togglegm for the GM icon). Level 1 covers almost everything; higher levels only add server and developer tools. Set it back to 0 to make the character a normal player again." />
+
+                        <TextBlock Text="Judge's outfit" Style="{StaticResource SectionTitle}" />
+                        <Button Content="Add Judge's outfit to inventory" Command="{Binding AddJudgeOutfitCommand}" HorizontalAlignment="Left" />
+                        <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,8,0,0"
+                                   Text="The GM armour: Judge's Helm, Cuirass, Gauntlets, Cuisses and Greaves, wearable by every job from level 1. It's GM-only gear, so save a GM level first. The rest of the set (shield, sword, ring, cape, earring, gorget, belt) is on the Inventory tab: search for judge. The ring and cape make a character almost impossible to hurt." />
+                    </StackPanel>
+                </ScrollViewer>
             </TabItem>
         </TabControl>
     </DockPanel>

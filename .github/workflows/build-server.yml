@@ -24,7 +24,7 @@ jobs:
         shell: bash
     steps:
       - name: Check out LandSandBoat
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: LandSandBoat/server
           ref: ${{ inputs.lsb_ref }}
@@ -48,7 +48,7 @@ jobs:
           arch: x64
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.14'
 

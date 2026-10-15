@@ -78,7 +78,6 @@ public sealed class GameWindowSettings
     public int Width { get; set; } = 1920;
     public int Height { get; set; } = 1080;
     public WindowMode Mode { get; set; } = WindowMode.Windowed;
-    public bool RunAsAdministrator { get; set; }
 }
 
 public sealed class ServerOptions

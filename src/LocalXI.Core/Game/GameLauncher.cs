@@ -50,26 +50,32 @@ public sealed class GameLauncher(AppPaths paths)
     internal static string XiloaderCommand(string serverAddress, AccountSettings account) =>
         $"--server {serverAddress} --user {account.Username} --pass {account.Password} --hide";
 
-    public void Launch(bool runAsAdministrator)
+    public void Launch()
     {
         if (!File.Exists(AshitaCli))
         {
             throw new FileNotFoundException("Ashita is not installed. Run setup again from Settings.", AshitaCli);
         }
 
+        // Ashita-cli.exe's manifest requires administrator rights (it injects into the game). Starting it directly
+        // fails with "requires elevation"; going through the shell makes Windows show its permission prompt instead.
         var startInfo = new ProcessStartInfo(AshitaCli)
         {
             WorkingDirectory = paths.AshitaDir,
-            UseShellExecute = runAsAdministrator,
-            CreateNoWindow = true,
+            UseShellExecute = true,
+            Arguments = BootConfigName,
         };
-        startInfo.ArgumentList.Add(BootConfigName);
-        if (runAsAdministrator)
-        {
-            startInfo.Verb = "runas";
-        }
 
-        using var process = Process.Start(startInfo);
+        try
+        {
+            using var process = Process.Start(startInfo);
+        }
+        catch (System.ComponentModel.Win32Exception e) when (e.NativeErrorCode == 1223)
+        {
+            throw new OperationCanceledException(
+                "The game wasn't started because the Windows permission prompt was declined. " +
+                "Ashita needs administrator rights to start FINAL FANTASY XI.");
+        }
     }
 
     /// <summary>Waits for the game to appear (Ashita takes a moment) and then to close.</summary>

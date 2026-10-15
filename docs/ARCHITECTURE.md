@@ -155,6 +155,11 @@ The launcher runs as a normal user. Registry repair and firewall rules start a s
 with `--elevated <resultFile> <task> ...` behind a UAC prompt; it does that one task, writes the result and
 exits. Visual C++ runtime installers are run elevated directly.
 
+`Ashita-cli.exe` declares `requireAdministrator` in its manifest (it injects into the game), so it is started
+through the shell, which shows the UAC prompt on every Play; starting it directly fails with "requires
+elevation". The game therefore runs elevated. The launcher only watches for its `xiloader` process to close,
+which works without inspecting it.
+
 ## Saves
 
 See [SAVE-FORMAT.md](SAVE-FORMAT.md).

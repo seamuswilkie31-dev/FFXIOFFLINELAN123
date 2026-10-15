@@ -93,7 +93,7 @@ Automatic backups are kept in `Documents\LocalXI\Backups`; exports go to `Docume
 
 | Problem | Try |
 |---|---|
-| The game doesn't open | Settings → **Fix registry**. If that's fine, tick *Run the game as administrator*. |
+| The game doesn't open | Approve the Windows permission prompt when you press Play (Ashita needs administrator rights to start the game). Then check Settings → **Fix registry**. |
 | "Your game files are older than this server expects" | Update the game in PlayOnline (*Check Files → FINAL FANTASY XI*). If FINAL FANTASY XI isn't in that list, the game hasn't signed in to Square Enix's servers yet; see [You bring the game](#you-bring-the-game). |
 | Friends can't connect | Network → **Allow friends through Windows Firewall**. Check you're both in the same Radmin network and that the host picked the Radmin address. Friends can use **Test connection**. |
 | "Ports are already in use" | Another FFXI server or launcher is running. Close it. |

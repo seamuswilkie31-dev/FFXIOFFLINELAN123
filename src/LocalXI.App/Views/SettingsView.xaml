@@ -56,7 +56,6 @@
                             </ComboBox>
                         </StackPanel>
                     </WrapPanel>
-                    <CheckBox Content="Run the game as administrator (only if it won't start otherwise)" IsChecked="{Binding RunAsAdministrator}" />
                 </StackPanel>
             </Border>
 

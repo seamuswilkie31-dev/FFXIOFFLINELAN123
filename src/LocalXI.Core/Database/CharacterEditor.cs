@@ -469,6 +469,11 @@ public sealed class CharacterEditor(GameDatabase database)
             "INSERT INTO char_flags (charid, gmModeEnabled, gmHiddenEnabled) VALUES (@id, @mode, 0) " +
             "ON DUPLICATE KEY UPDATE gmModeEnabled = @mode, gmHiddenEnabled = IF(@level = 0, 0, gmHiddenEnabled)",
             Args(charId, ("@level", level), ("@mode", gmMode ? 1 : 0)), cancellationToken);
+        if (level == 0)
+        {
+            // !hide keeps its own toggle state in this char var.
+            await database.ExecuteAsync("DELETE FROM char_vars WHERE charid = @id AND varname = 'GMHidden'", Id(charId), cancellationToken);
+        }
     }
 
     /// <summary>Adds the pieces of the Judge's outfit the character doesn't already own. Returns how many were added.</summary>

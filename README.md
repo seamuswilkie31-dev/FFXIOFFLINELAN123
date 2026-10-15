@@ -110,6 +110,9 @@ rate for everyone.
 Changes are saved straight into the database, so the server has to be stopped while you make them (the page
 offers to stop it). Everything is backed up automatically before the first change each session.
 
+Step-by-step guide, including how to undo changes and a list of handy GM commands:
+[docs/MODIFIERS.md](docs/MODIFIERS.md).
+
 ## Troubleshooting
 
 | Problem | Try |

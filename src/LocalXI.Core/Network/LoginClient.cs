@@ -1,7 +1,9 @@
-using System.Net.Security;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
+using Org.BouncyCastle.Security;
+using Org.BouncyCastle.Tls;
+using Org.BouncyCastle.Tls.Crypto.Impl.BC;
 
 namespace LocalXI.Core.Network;
 
@@ -59,7 +61,8 @@ public sealed class LoginClient(byte[] xiloaderVersion)
             await SendAsync(host, CommandNoop, "localxi", "ping", expectReply: false, cancellationToken);
             return true;
         }
-        catch (Exception e) when (e is IOException or SocketException or OperationCanceledException or System.Security.Authentication.AuthenticationException)
+        // BouncyCastle reports TLS failures as IOExceptions.
+        catch (Exception e) when (e is IOException or SocketException or OperationCanceledException)
         {
             return false;
         }
@@ -70,34 +73,75 @@ public sealed class LoginClient(byte[] xiloaderVersion)
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cts.CancelAfter(TimeSpan.FromSeconds(10));
 
-        using var tcp = new TcpClient();
+        // The TLS library below works on blocking calls; these timeouts keep a silent server from hanging us.
+        using var tcp = new TcpClient { ReceiveTimeout = 10_000, SendTimeout = 10_000 };
         await tcp.ConnectAsync(host, AuthPort, cts.Token);
 
-        // The login server generates a self-signed certificate on first run, so there is no CA to validate against
-        // (xiloader itself only warns). The connection is still encrypted.
-        await using var tls = new SslStream(tcp.GetStream(), leaveInnerStreamOpen: false, (_, _, _, _) => true);
-        await tls.AuthenticateAsClientAsync(new SslClientAuthenticationOptions { TargetHost = host }, cts.Token);
-
-        var request = JsonSerializer.SerializeToUtf8Bytes(new Dictionary<string, object>
+        // LandSandBoat's login server only accepts TLS 1.3 (tlsv13_server in src/login/handler.h), and Windows 10's
+        // built-in TLS can't make TLS 1.3 client connections. So, like xiloader bringing its own mbedTLS, use
+        // BouncyCastle's managed TLS instead of SslStream.
+        var protocol = new TlsClientProtocol(tcp.GetStream());
+        try
         {
-            ["username"] = username,
-            ["password"] = password,
-            ["otp"] = "",
-            ["new_password"] = "",
-            ["version"] = xiloaderVersion.Select(b => (int)b).ToArray(),
-            ["command"] = (int)command,
-        });
-        await tls.WriteAsync(request, cts.Token);
-        await tls.FlushAsync(cts.Token);
+            await Task.Run(() => protocol.Connect(new LoginTlsClient()), cts.Token);
+            var tls = protocol.Stream;
 
-        if (!expectReply)
+            var request = JsonSerializer.SerializeToUtf8Bytes(new Dictionary<string, object>
+            {
+                ["username"] = username,
+                ["password"] = password,
+                ["otp"] = "",
+                ["new_password"] = "",
+                ["version"] = xiloaderVersion.Select(b => (int)b).ToArray(),
+                ["command"] = (int)command,
+            });
+            await Task.Run(() =>
+            {
+                tls.Write(request, 0, request.Length);
+                tls.Flush();
+            }, cts.Token);
+
+            if (!expectReply)
+            {
+                return new LoginReply(null, null);
+            }
+
+            var buffer = new byte[4096];
+            var read = await Task.Run(() => tls.Read(buffer, 0, buffer.Length), cts.Token);
+            return ParseReply(buffer.AsSpan(0, read));
+        }
+        finally
         {
-            return new LoginReply(null, null);
+            try
+            {
+                protocol.Close();
+            }
+            catch (IOException)
+            {
+                // The server may already have closed its side.
+            }
+        }
+    }
+
+    /// <summary>TLS 1.3 (falling back to 1.2) with BouncyCastle's own crypto, independent of the Windows version.</summary>
+    private sealed class LoginTlsClient() : DefaultTlsClient(new BcTlsCrypto(new SecureRandom()))
+    {
+        protected override ProtocolVersion[] GetSupportedVersions() => ProtocolVersion.TLSv13.DownTo(ProtocolVersion.TLSv12);
+
+        public override TlsAuthentication GetAuthentication() => new SelfSignedServer();
+    }
+
+    /// <summary>
+    /// The login server makes its own self-signed certificate on first run, so there is no authority to check it
+    /// against (xiloader only warns too). The connection is still encrypted.
+    /// </summary>
+    private sealed class SelfSignedServer : TlsAuthentication
+    {
+        public void NotifyServerCertificate(TlsServerCertificate serverCertificate)
+        {
         }
 
-        var buffer = new byte[4096];
-        var read = await tls.ReadAsync(buffer, cts.Token);
-        return ParseReply(buffer.AsSpan(0, read));
+        public TlsCredentials GetClientCredentials(CertificateRequest certificateRequest) => null!;
     }
 
     internal static LoginReply ParseReply(ReadOnlySpan<byte> data)

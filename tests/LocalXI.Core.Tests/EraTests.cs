@@ -36,6 +36,13 @@ public class EraPresetTests : IDisposable
     }
 
     [Fact]
+    public void Classic_LoadsEveryZoneSoEraOverridesApply()
+    {
+        Assert.False(EraPresets.AllowsLazyZones(GameEra.Classic75));
+        Assert.True(EraPresets.AllowsLazyZones(GameEra.Modern));
+    }
+
+    [Fact]
     public void Modern_LeavesLandSandBoatDefaultsAlone()
     {
         Assert.Empty(EraPresets.Settings(GameEra.Modern));

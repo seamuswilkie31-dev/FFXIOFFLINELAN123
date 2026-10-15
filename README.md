@@ -7,9 +7,17 @@ server and starts the game through [Ashita](https://www.ashitaxi.com) for you. N
 no config files. Play solo, host a world for friends on your home network or over Radmin VPN, or join a
 friend's world. Your characters are saved on your PC and can be carried to another PC as a single file.
 
-> **Status: early development.** The launcher, setup wizard, database, accounts and save files work and are
-> tested. Playing end-to-end needs the first server package to be published (see
-> [docs/RELEASING.md](docs/RELEASING.md)) and has not been tested on real hardware yet. See [docs/TESTING.md](docs/TESTING.md).
+> **Status: early development.** Setup, the database, the full LandSandBoat server (from this repo's
+> published package), accounts and save files are tested on a real PC. Logging in and playing in-game is not
+> tested yet. See [docs/TESTING.md](docs/TESTING.md).
+
+## What you need
+
+- Windows 10 or 11, 64-bit
+- Your own FINAL FANTASY XI install (see below)
+- About 2 GB of disk space for LocalXI, plus the game
+- Memory: 8 GB is enough to join a friend; **16 GB recommended to host or play solo** (the classic-era server
+  keeps every zone loaded, about 3 GB on its own)
 
 ## You bring the game
 

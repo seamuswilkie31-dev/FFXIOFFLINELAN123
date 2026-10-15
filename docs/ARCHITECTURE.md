@@ -70,11 +70,19 @@ Settings are passed as environment variables, which LandSandBoat applies over it
 Note that LandSandBoat turns all-digit values into numbers, which is why generated passwords always start with
 a letter.
 
-Consoles are hidden and output goes to `logs\` and the Logs page. Stopping sends Ctrl+C to each program (so
-the map server saves characters), waits, and only then force-closes, in reverse order.
+A program counts as started once its ports are open **and** it has logged LandSandBoat's
+"The <name>-server is ready to work" line. Ports open long before that: the map server spends anywhere from a
+few seconds to over a minute loading scripts, items and zones. If a future version stops printing the line,
+open ports plus a grace period (20 s, or 4 minutes for the map server) is enough to carry on.
 
-`xi_map` runs with `--lazy` by default: zones load when someone enters them, which makes start-up much faster
-for a handful of players.
+Consoles are hidden and output goes to `logs\` and the Logs page. Stopping sends Ctrl+C to each program (so
+the map server saves characters), waits, and only then force-closes, in reverse order. A fully started server
+stops cleanly in a second or two; a map server still starting up ignores Ctrl+C and is force-closed after 20 s.
+
+In **modern** mode `xi_map` runs with `--lazy` (zones load when someone enters them), which starts in seconds.
+**Classic** mode loads every zone at start-up: many `era/lua` overrides target zone scripts (notorious monster
+respawns, shop stock, fame checks), and with lazy zones those scripts don't exist yet when the overrides are
+applied, so 114 of them were silently skipped. Loading every zone takes the map server to about 2.8 GB of RAM.
 
 ## Game era
 
@@ -125,6 +133,9 @@ router port doesn't expose the server to the whole internet.
   uses a self-signed certificate), one JSON request (`{"command": 32, "username", "password", "version": [2,2,0], ...}`)
   and one JSON reply (`{"result": 3}` means created). This only works while the host allows account creation,
   which is LandSandBoat's default.
+- The login server accepts **TLS 1.3 only** (`tlsv13_server` in `src/login/handler.h`), which Windows 10's built-in
+  TLS can't do as a client. Like xiloader bringing its own mbedTLS, `LoginClient` uses BouncyCastle's managed TLS
+  rather than `SslStream`, so it works on every Windows version.
 
 ## Starting the game
 

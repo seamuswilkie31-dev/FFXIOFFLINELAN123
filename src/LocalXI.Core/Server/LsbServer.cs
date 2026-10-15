@@ -32,17 +32,22 @@ public sealed class LsbServer(ServerPackage package, GameDatabase database, AppP
 {
     public const int MapPort = 54230;
 
-    private sealed record Definition(string Name, string Description, int[] TcpPorts, int[] UdpPorts, bool Optional, TimeSpan ReadyTimeout);
+    /// <param name="ReadyGrace">
+    /// How long after its ports open to wait for the program's "ready to work" line before carrying on anyway
+    /// (in case a future version stops printing it).
+    /// </param>
+    private sealed record Definition(string Name, string Description, int[] TcpPorts, int[] UdpPorts, bool Optional, TimeSpan ReadyGrace, TimeSpan ReadyTimeout);
 
     // Start order follows LandSandBoat's docker-compose: world hosts the message broker the others connect to,
-    // and the map server comes last because it depends on all of them.
+    // and the map server comes last because it depends on all of them. Loading every zone can take the map
+    // server well over a minute.
     private static readonly Definition[] Definitions =
     [
-        new("xi_world", "World", [54003], [], Optional: false, TimeSpan.FromSeconds(30)),
-        new("xi_connect", "Login", [54001, 54230, 54231], [], Optional: false, TimeSpan.FromSeconds(30)),
-        new("xi_search", "Search", [54002], [], Optional: false, TimeSpan.FromSeconds(30)),
-        new("xi_profile", "Profile", [51220], [], Optional: true, TimeSpan.FromSeconds(30)),
-        new("xi_map", "Map", [], [MapPort], Optional: false, TimeSpan.FromMinutes(5)),
+        new("xi_world", "World", [54003], [], Optional: false, TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(30)),
+        new("xi_connect", "Login", [54001, 54230, 54231], [], Optional: false, TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(30)),
+        new("xi_search", "Search", [54002], [], Optional: false, TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(30)),
+        new("xi_profile", "Profile", [51220], [], Optional: true, TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(30)),
+        new("xi_map", "Map", [], [MapPort], Optional: false, TimeSpan.FromMinutes(4), TimeSpan.FromMinutes(5)),
     ];
 
     private readonly List<ManagedProcess> _running = [];
@@ -107,7 +112,9 @@ public sealed class LsbServer(ServerPackage package, GameDatabase database, AppP
                     throw new FileNotFoundException($"{definition.Name}.exe is missing from the server folder.", executable);
                 }
 
-                progress?.Report($"Starting the {definition.Description} server...");
+                progress?.Report(definition.Name == "xi_map"
+                    ? "Loading the world (this can take a minute or two)..."
+                    : $"Starting the {definition.Description} server...");
                 SetState(definition.Name, ServerProcessState.Starting);
 
                 var process = ManagedProcess.Start(
@@ -224,15 +231,17 @@ public sealed class LsbServer(ServerPackage package, GameDatabase database, AppP
                     $"The {definition.Description} server ({definition.Name}) stopped during start-up (exit code {process.ExitCode}). The end of its log says:\n{process.Tail()}");
             }
 
-            if (definition.TcpPorts.All(PortProbe.IsTcpListening) && definition.UdpPorts.All(PortProbe.IsUdpBound))
+            // Ports open early, so also wait for the program's own "ready to work" line.
+            var listening = definition.TcpPorts.All(PortProbe.IsTcpListening) && definition.UdpPorts.All(PortProbe.IsUdpBound);
+            if (listening && (process.IsReady || elapsed.Elapsed > definition.ReadyGrace))
             {
                 return;
             }
 
-            await Task.Delay(500, cancellationToken);
+            await Task.Delay(250, cancellationToken);
         }
 
-        // Still alive but not listening where we expected: carry on rather than fail on a port-layout change upstream.
+        // Still alive but not ready where we expected: carry on rather than fail on an upstream change.
     }
 
     private void OnProcessExited(ManagedProcess process)

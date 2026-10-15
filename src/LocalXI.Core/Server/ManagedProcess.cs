@@ -7,8 +7,13 @@ namespace LocalXI.Core.Server;
 /// <summary>A long-running server program with its console hidden and its output captured to a log.</summary>
 public sealed class ManagedProcess : IDisposable
 {
+    // Every LandSandBoat program logs "The <name>-server is ready to work after N seconds..." once it has
+    // finished starting (Application::markLoaded). Its ports open well before that.
+    private const string ReadyMarker = "is ready to work";
+
     private readonly Process _process;
     private readonly LogSink _log;
+    private volatile bool _ready;
 
     private ManagedProcess(string name, Process process, LogSink log, string logFile)
     {
@@ -23,6 +28,9 @@ public sealed class ManagedProcess : IDisposable
     public int Id => _process.Id;
     public bool HasExited => _process.HasExited;
     public int? ExitCode => _process.HasExited ? _process.ExitCode : null;
+
+    /// <summary>True once the program has reported that it finished starting.</summary>
+    public bool IsReady => _ready;
 
     public event Action<ManagedProcess>? Exited;
 
@@ -57,8 +65,10 @@ public sealed class ManagedProcess : IDisposable
         log.Write($"> {Path.GetFileName(executable)} {string.Join(' ', startInfo.ArgumentList)}");
 
         var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
-        process.OutputDataReceived += (_, e) => log.Write(e.Data);
-        process.ErrorDataReceived += (_, e) => log.Write(e.Data);
+        var managed = new ManagedProcess(name, process, log, logFile);
+        process.OutputDataReceived += (_, e) => managed.OnOutput(e.Data);
+        process.ErrorDataReceived += (_, e) => managed.OnOutput(e.Data);
+        process.Exited += (_, _) => managed.Exited?.Invoke(managed);
         if (!process.Start())
         {
             log.Dispose();
@@ -67,10 +77,16 @@ public sealed class ManagedProcess : IDisposable
 
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
-
-        var managed = new ManagedProcess(name, process, log, logFile);
-        process.Exited += (_, _) => managed.Exited?.Invoke(managed);
         return managed;
+    }
+
+    private void OnOutput(string? line)
+    {
+        _log.Write(line);
+        if (!_ready && line is not null && line.Contains(ReadyMarker, StringComparison.Ordinal))
+        {
+            _ready = true;
+        }
     }
 
     /// <summary>Asks the program to shut down cleanly, then forces it if it hasn't exited within <paramref name="grace"/>.</summary>

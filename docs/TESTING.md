@@ -2,10 +2,21 @@
 
 ## Verified (October 2026, Windows 10 22H2)
 
-- **Unit tests** (`dotnet test`, 58 tests): INI editing, password rules, client-version parsing, the
+- **Unit tests** (`dotnet test`, 59 tests): INI editing, password rules, client-version parsing, the
   component manifest, download hash checking, zip install/upgrade with preserved folders, era presets and
   data-pack ordering, the player-table list, server package detection, login-protocol replies, network adapter
   classification, and Windows argument quoting.
+- **The real server, end-to-end** (package `server-1f204df5e2`, built by this repo's workflow in 71 minutes),
+  in a fresh portable folder:
+  - all five components downloaded and hash-checked (about 500 MB in 1.5 minutes), the game data loaded in
+    classic mode in 30 seconds
+  - all five programs start; every port listens (TCP 54001, 54002, 54003, 54230, 54231, 51220; UDP 54230)
+  - start-up waits for the map server's "ready to work" line (5 to 90 seconds depending on zone loading and
+    antivirus scanning); no crashes in the following 25 seconds
+  - the classic settings reach the server (`XI_MAIN_*` logged as applied) and all 114 `era/lua` zone overrides
+    apply with every zone loaded (they were skipped with `--lazy`, hence classic mode no longer uses it)
+  - account creation over the login protocol with TLS 1.3, which Windows 10's own TLS can't do (hence BouncyCastle)
+  - Ctrl+C shutdown of all five programs in 1-2 seconds, then an automatic backup and a clean database stop
 - **Database end-to-end**, using the real portable MariaDB 12.3.3 and LandSandBoat's real SQL
   (commit `f038f1e`):
   - download and hash check, `mariadb-install-db`, start and clean shutdown
@@ -25,12 +36,10 @@
 
 ## Not yet verified
 
-These need a published server package (see [RELEASING.md](RELEASING.md)) and an updated game client:
+These need the game client:
 
-- [ ] The *Build server package* workflow produces a working package
-- [ ] All five server programs start from the package and reach "listening"
-- [ ] Ctrl+C shutdown saves characters (falls back to force-stop after 20 s)
-- [ ] Classic era in-game: level cap 75, later-expansion areas closed, `era/lua` modules load without errors
+- [ ] Ctrl+C shutdown saves a logged-in character (shutdown itself is verified, with nobody online)
+- [ ] Classic era in-game: level cap 75, later-expansion areas closed
 - [ ] Ashita + xiloader start the game with the generated `localxi.ini` (`Ashita-cli.exe localxi.ini`)
 - [ ] Create a character, play, close the game → automatic backup → stop
 - [ ] Host mode: a second PC on Radmin VPN creates an account from Join setup and plays
@@ -42,7 +51,7 @@ These need a published server package (see [RELEASING.md](RELEASING.md)) and an 
 
 1. Update FINAL FANTASY XI through PlayOnline. This needs one sign-in to Square Enix's official servers first
    (see the README's "You bring the game").
-2. Publish a server package and pin it (RELEASING.md), then build or download `LocalXI.exe`.
+2. Build or download `LocalXI.exe` (the server package is already published and pinned).
 3. Fresh run → Solo → finish setup → **Play** → create a character → walk into another zone → close the game.
    Expect: the Logs page shows all five programs starting, the game reaches the character screen, and on close
    a new `auto-*.xisave` appears in Backups.

@@ -263,9 +263,10 @@ public sealed class LauncherService : IAsyncDisposable
         }
 
         var era = EraPresets.Settings(Config.Server.Era);
+        var lazy = Config.Server.LazyZones && EraPresets.AllowsLazyZones(Config.Server.Era);
         var options = Config.Mode == PlayMode.Host
-            ? new ServerStartOptions(CheckHostAddress(), LocalOnly: false, Config.Server.LazyZones, Config.Server.AllowOlderClients, era)
-            : new ServerStartOptions("127.0.0.1", LocalOnly: true, Config.Server.LazyZones, Config.Server.AllowOlderClients, era);
+            ? new ServerStartOptions(CheckHostAddress(), LocalOnly: false, lazy, Config.Server.AllowOlderClients, era)
+            : new ServerStartOptions("127.0.0.1", LocalOnly: true, lazy, Config.Server.AllowOlderClients, era);
         await Server.StartAsync(options, progress, cancellationToken);
     }
 

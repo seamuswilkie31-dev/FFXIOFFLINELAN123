@@ -62,6 +62,13 @@ public static class EraPresets
     public static IReadOnlyList<string> SqlPacks(GameEra era) => era == GameEra.Classic75 ? AfterWingsOfTheGoddess : [];
 
     /// <summary>
+    /// Whether the map server may load zones on demand (--lazy). Not in classic mode: many era/lua overrides target
+    /// zone scripts (notorious monster respawns, shop stock, fame checks), which only exist once their zone is loaded,
+    /// so with lazy zones they are never applied (verified against LandSandBoat 1f204df: 114 overrides skipped).
+    /// </summary>
+    public static bool AllowsLazyZones(GameEra era) => era != GameEra.Classic75;
+
+    /// <summary>
     /// The modules LandSandBoat loads at start-up. era/lua is always listed: each of its overrides only applies when
     /// the expansion it reverts is disabled, so in a modern world it does nothing.
     /// </summary>

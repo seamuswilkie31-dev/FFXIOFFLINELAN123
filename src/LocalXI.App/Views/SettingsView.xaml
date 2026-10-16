@@ -70,6 +70,10 @@
                     <CheckBox Content="Start the game through Ashita (addons and the window settings above)" IsChecked="{Binding UseAshita}" Margin="0,4,0,2" />
                     <TextBlock Style="{StaticResource Hint}" Margin="28,0,0,0"
                                Text="If the game freezes after a Square Enix update, turn this off until LocalXI ships a newer Ashita. The game then starts through xiloader alone and uses its own settings from the FINAL FANTASY XI Config tool." />
+                    <CheckBox Content="Let the Windows key work while the game is open" IsChecked="{Binding WindowsKey}" Margin="0,10,0,2"
+                              IsEnabled="{Binding UseAshita}" />
+                    <TextBlock Style="{StaticResource Hint}" Margin="28,0,0,0" TextWrapping="Wrap"
+                               Text="The game blocks the Windows key. With this on, the Start menu and shortcuts work, such as Windows+Shift+Left/Right to move the game window to another monitor. Needs the game started through Ashita; takes effect the next time you press Play." />
                 </StackPanel>
             </Border>
 

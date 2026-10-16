@@ -93,6 +93,12 @@ public sealed class GameWindowSettings
 
     /// <summary>How big the game's menus and text are drawn, in percent (100 = the window's own resolution).</summary>
     public int UiScale { get; set; } = 100;
+
+    /// <summary>
+    /// Let the Windows key work while the game has focus (Start menu, Win+Shift+arrows to move the window to another
+    /// monitor). The game blocks it; Ashita's keyboard.windowskeyenabled lets it through.
+    /// </summary>
+    public bool WindowsKey { get; set; } = true;
 }
 
 public sealed class ServerOptions

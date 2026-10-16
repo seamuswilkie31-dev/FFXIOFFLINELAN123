@@ -34,6 +34,7 @@ public sealed class GameLauncher(AppPaths paths)
         ini.Set("ashita.boot", "gamemodule", "ffximain.dll");
         ini.Set("ashita.boot", "script", "default.txt");
         ini.Set("ashita.boot", "args", "");
+        ini.Set("ashita.input", "keyboard.windowskeyenabled", window.WindowsKey ? "1" : "0");
 
         // Game settings normally written by FINAL FANTASY XI's config tool; Ashita applies them at launch.
         ini.Set("ffxi.registry", "0001", window.Width.ToString());

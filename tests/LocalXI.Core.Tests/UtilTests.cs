@@ -142,11 +142,13 @@ public class GameLauncherTests
             Assert.Equal("2", ini.Get("ffxi.registry", "0034"));
             Assert.Equal("1280", ini.Get("ffxi.registry", "0037"));
             Assert.Equal("720", ini.Get("ffxi.registry", "0038"));
+            Assert.Equal("1", ini.Get("ashita.input", "keyboard.windowskeyenabled"));
 
             launcher.WriteBootConfig("127.0.0.1", new AccountSettings { Username = "u_name", Password = "secret12" },
-                new GameWindowSettings { Width = 1920, Height = 1080, Mode = WindowMode.BorderlessFullscreen });
+                new GameWindowSettings { Width = 1920, Height = 1080, Mode = WindowMode.BorderlessFullscreen, WindowsKey = false });
             ini = IniFile.Load(launcher.BootConfigPath);
             Assert.Equal("3", ini.Get("ffxi.registry", "0034"));
+            Assert.Equal("0", ini.Get("ashita.input", "keyboard.windowskeyenabled"));
             Assert.Equal("1920", ini.Get("ffxi.registry", "0037"));
             Assert.Equal("1080", ini.Get("ffxi.registry", "0038"));
         }

@@ -60,6 +60,8 @@ These need the game client:
 - [ ] Window modes in game: borderless windowed (0034 = 2) is a borderless window of the chosen size, borderless
   fullscreen (0034 = 3) covers the screen (the client's documented names for 2 and 3 are swapped)
 - [ ] Interface size in game: a smaller menu resolution (0037/0038) makes the menus bigger
+- [ ] Windows key in game with Ashita's keyboard.windowskeyenabled = 1 (Start menu, Windows+Shift+arrows to
+  move the window to another monitor)
 - [ ] Host mode: a second PC on Radmin VPN creates an account from Join setup and plays
 - [ ] Firewall rules: friends connect after **Allow friends through Windows Firewall**
 - [ ] Registry repair on a copied install (install folders and COM classes), then the game starts

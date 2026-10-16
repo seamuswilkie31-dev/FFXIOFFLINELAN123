@@ -122,6 +122,7 @@ Step-by-step guide, including how to undo changes and a list of handy GM command
 | "Your game files are older than this server expects" | Update the game in PlayOnline (*Check Files → FINAL FANTASY XI*). If FINAL FANTASY XI isn't in that list, the game hasn't signed in to Square Enix's servers yet; see [You bring the game](#you-bring-the-game). |
 | Friends can't connect | Network → **Allow friends through Windows Firewall**. Check you're both in the same Radmin network and that the host picked the Radmin address. Friends can use **Test connection**. |
 | "Ports are already in use" | Another FFXI server or launcher is running. Close it. |
+| The Windows key does nothing in game | Settings → Display → **Let the Windows key work while the game is open** (on by default; needs Ashita). Windows+Shift+Left/Right then moves the game to another monitor. |
 | Anything else | The **Logs** page shows everything the server and database print. |
 
 ## How it works

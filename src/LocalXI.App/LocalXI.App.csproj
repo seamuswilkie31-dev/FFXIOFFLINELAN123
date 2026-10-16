@@ -7,12 +7,18 @@
     <RootNamespace>LocalXI.App</RootNamespace>
     <AssemblyName>LocalXI</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Drawn by tools\make-icon.ps1. -->
+    <ApplicationIcon>Assets\LocalXI.ico</ApplicationIcon>
     <!-- WPF0001: the Fluent ThemeMode API is still marked experimental. -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\LocalXI.ico" />
   </ItemGroup>
 
   <ItemGroup>

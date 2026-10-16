@@ -4,6 +4,7 @@
         xmlns:vm="clr-namespace:LocalXI.App.ViewModels"
         xmlns:views="clr-namespace:LocalXI.App.Views"
         Title="LocalXI"
+        Icon="Assets/LocalXI.ico"
         Width="1080" Height="740" MinWidth="900" MinHeight="600"
         WindowStartupLocation="CenterScreen"
         Background="#10151C" Foreground="#E8EDF3" FontSize="14">

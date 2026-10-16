@@ -8,6 +8,7 @@ namespace LocalXI.App;
 public partial class App : Application
 {
     private Mutex? _singleInstance;
+    private LauncherService? _launcher;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -30,9 +31,10 @@ public partial class App : Application
             return;
         }
 
+        var launcher = new LauncherService(AppPaths.Resolve());
+        _launcher = launcher;
         DispatcherUnhandledException += OnUnhandledException;
 
-        var launcher = new LauncherService(AppPaths.Resolve());
         var window = new MainWindow { DataContext = new MainViewModel(launcher) };
         MainWindow = window;
         window.Show();
@@ -44,9 +46,11 @@ public partial class App : Application
         base.OnExit(e);
     }
 
-    private static void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+    private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        MessageBox.Show(e.Exception.Message, "LocalXI - something went wrong", MessageBoxButton.OK, MessageBoxImage.Error);
         e.Handled = true;
+        _launcher?.Logs.Add("launcher", "Unexpected error: " + e.Exception);
+        var message = string.IsNullOrWhiteSpace(e.Exception.Message) ? e.Exception.GetType().Name : e.Exception.Message;
+        MessageBox.Show($"{message}\n\nThe Logs page has the details.", "LocalXI - something went wrong", MessageBoxButton.OK, MessageBoxImage.Error);
     }
 }

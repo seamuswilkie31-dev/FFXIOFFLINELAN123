@@ -14,6 +14,7 @@ public sealed class ManagedProcess : IDisposable
     private readonly Process _process;
     private readonly LogSink _log;
     private volatile bool _ready;
+    private volatile bool _disposed;
 
     private ManagedProcess(string name, Process process, LogSink log, string logFile)
     {
@@ -26,8 +27,10 @@ public sealed class ManagedProcess : IDisposable
     public string Name { get; }
     public string LogFile { get; }
     public int Id => _process.Id;
-    public bool HasExited => _process.HasExited;
-    public int? ExitCode => _process.HasExited ? _process.ExitCode : null;
+    // A disposed Process throws "No process is associated with this object" when asked; ours only gets disposed
+    // once it has stopped.
+    public bool HasExited => _disposed || _process.HasExited;
+    public int? ExitCode => !_disposed && _process.HasExited ? _process.ExitCode : null;
 
     /// <summary>True once the program has reported that it finished starting.</summary>
     public bool IsReady => _ready;
@@ -92,7 +95,7 @@ public sealed class ManagedProcess : IDisposable
     /// <summary>Asks the program to shut down cleanly, then forces it if it hasn't exited within <paramref name="grace"/>.</summary>
     public async Task StopAsync(TimeSpan grace)
     {
-        if (_process.HasExited)
+        if (HasExited)
         {
             return;
         }
@@ -119,6 +122,7 @@ public sealed class ManagedProcess : IDisposable
 
     public void Dispose()
     {
+        _disposed = true;
         _process.Dispose();
         _log.Dispose();
     }

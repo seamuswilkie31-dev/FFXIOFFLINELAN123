@@ -148,6 +148,10 @@ public sealed class LsbServer(ServerPackage package, GameDatabase database, AppP
         {
             progress?.Report($"Stopping {process.Name}...");
             await process.StopAsync(process.Name == "xi_map" ? TimeSpan.FromSeconds(20) : TimeSpan.FromSeconds(5));
+
+            // Out of the running list before anyone hears about it: status listeners check IsRunning, which must not
+            // touch a process that's about to be disposed.
+            _running.Remove(process);
             SetState(process.Name, ServerProcessState.Stopped);
             process.Dispose();
         }

@@ -98,3 +98,22 @@ public class NetworkInfoTests
     public void ClassifiesAdapters(string adapter, string ip, NetworkKind expected) =>
         Assert.Equal(expected, NetworkInfo.Classify(adapter, IPAddress.Parse(ip)));
 }
+
+public class ManagedProcessTests : IDisposable
+{
+    private readonly string _root = Directory.CreateTempSubdirectory("localxi-test-").FullName;
+
+    public void Dispose() => Directory.Delete(_root, recursive: true);
+
+    [Fact]
+    public async Task HasExited_IsSafeAfterDispose()
+    {
+        // The server disposes each program once it has stopped, while status listeners may still ask about it.
+        var process = ManagedProcess.Start("test", "cmd.exe", ["/c", "exit"], _root, new Dictionary<string, string>(), Path.Combine(_root, "test.log"), null);
+        await process.StopAsync(TimeSpan.FromSeconds(5));
+        process.Dispose();
+
+        Assert.True(process.HasExited);
+        Assert.Null(process.ExitCode);
+    }
+}

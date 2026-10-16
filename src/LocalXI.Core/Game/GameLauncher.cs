@@ -38,8 +38,9 @@ public sealed class GameLauncher(AppPaths paths)
         // Game settings normally written by FINAL FANTASY XI's config tool; Ashita applies them at launch.
         ini.Set("ffxi.registry", "0001", window.Width.ToString());
         ini.Set("ffxi.registry", "0002", window.Height.ToString());
-        ini.Set("ffxi.registry", "0037", window.Width.ToString());
-        ini.Set("ffxi.registry", "0038", window.Height.ToString());
+        var (menuWidth, menuHeight) = Display.MenuResolution(window.Width, window.Height, window.UiScale);
+        ini.Set("ffxi.registry", "0037", menuWidth.ToString());
+        ini.Set("ffxi.registry", "0038", menuHeight.ToString());
         ini.Set("ffxi.registry", "0034", ((int)window.Mode).ToString());
         Directory.CreateDirectory(paths.ScreenshotsDir);
         ini.Set("ffxi.registry", "0042", paths.ScreenshotsDir);

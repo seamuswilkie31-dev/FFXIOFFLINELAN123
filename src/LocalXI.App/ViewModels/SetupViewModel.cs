@@ -341,7 +341,7 @@ public sealed partial class SetupViewModel : ObservableObject
         {
             // Fill the screen without a title bar, instead of a 1080p default window that overflows laptops.
             (config.Window.Width, config.Window.Height) = (width, height);
-            config.Window.Mode = WindowMode.BorderlessWindowed;
+            config.Window.Mode = WindowMode.BorderlessFullscreen;
         }
 
         launcher.SaveConfig();

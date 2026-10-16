@@ -130,20 +130,44 @@ public class GameLauncherTests
 
             var launcher = new GameLauncher(paths);
             launcher.WriteBootConfig("127.0.0.1", new AccountSettings { Username = "u_name", Password = "secret12" },
-                new GameWindowSettings { Width = 2560, Height = 1440, Mode = WindowMode.BorderlessWindowed });
+                new GameWindowSettings { Width = 2560, Height = 1440, Mode = WindowMode.BorderlessWindowed, UiScale = 200 });
 
             var ini = IniFile.Load(launcher.BootConfigPath);
             Assert.Equal(@".\\bootloader\\xiloader.exe", ini.Get("ashita.boot", "file"));
             Assert.Contains("--server 127.0.0.1", ini.Get("ashita.boot", "command"));
             Assert.Equal("Arial", ini.Get("ashita.fonts", "d3d8.family"));
             Assert.Equal("2560", ini.Get("ffxi.registry", "0001"));
+            Assert.Equal("1440", ini.Get("ffxi.registry", "0002"));
+            // The client's 2 is the real borderless window (its documented names for 2 and 3 are swapped).
+            Assert.Equal("2", ini.Get("ffxi.registry", "0034"));
+            Assert.Equal("1280", ini.Get("ffxi.registry", "0037"));
+            Assert.Equal("720", ini.Get("ffxi.registry", "0038"));
+
+            launcher.WriteBootConfig("127.0.0.1", new AccountSettings { Username = "u_name", Password = "secret12" },
+                new GameWindowSettings { Width = 1920, Height = 1080, Mode = WindowMode.BorderlessFullscreen });
+            ini = IniFile.Load(launcher.BootConfigPath);
             Assert.Equal("3", ini.Get("ffxi.registry", "0034"));
+            Assert.Equal("1920", ini.Get("ffxi.registry", "0037"));
+            Assert.Equal("1080", ini.Get("ffxi.registry", "0038"));
         }
         finally
         {
             Directory.Delete(root, recursive: true);
         }
     }
+}
+
+public class DisplayTests
+{
+    [Theory]
+    [InlineData(1920, 1080, 100, 1920, 1080)]
+    [InlineData(2560, 1440, 200, 1280, 720)]
+    [InlineData(1366, 768, 125, 1092, 614)]
+    [InlineData(1920, 1080, 300, 854, 480)] // never below 480 lines; keeps the window's shape
+    [InlineData(800, 480, 200, 800, 480)]
+    [InlineData(1920, 1080, 999, 854, 480)] // out-of-range scales are clamped
+    public void MenuResolution_ScalesTheInterface(int width, int height, int scale, int menuWidth, int menuHeight) =>
+        Assert.Equal((menuWidth, menuHeight), Display.MenuResolution(width, height, scale));
 }
 
 public class ElevationTests

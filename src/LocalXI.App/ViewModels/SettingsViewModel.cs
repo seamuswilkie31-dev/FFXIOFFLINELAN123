@@ -33,10 +33,28 @@ public sealed partial class SettingsViewModel(MainViewModel main) : PageViewMode
     private bool _registryOk;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UiScaleHint))]
     private int _width;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UiScaleHint))]
     private int _height;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UiScaleHint))]
+    private int _uiScale;
+
+    public IReadOnlyList<int> UiScales => Display.UiScales;
+
+    public string UiScaleHint
+    {
+        get
+        {
+            var (width, height) = Display.MenuResolution(Math.Clamp(Width, 640, 7680), Math.Clamp(Height, 480, 4320), UiScale);
+            return $"The game draws its menus and text at {width} x {height} and stretches them to the window. " +
+                   "Bigger percentages make the interface larger; the 3D world keeps the full window resolution.";
+        }
+    }
 
     [ObservableProperty]
     private WindowMode _windowMode;
@@ -78,6 +96,7 @@ public sealed partial class SettingsViewModel(MainViewModel main) : PageViewMode
         Width = config.Window.Width;
         Height = config.Window.Height;
         WindowMode = config.Window.Mode;
+        UiScale = Display.UiScales.Contains(config.Window.UiScale) ? config.Window.UiScale : 100;
         UseAshita = config.UseAshita;
         Era = config.Server.Era;
         LazyZones = config.Server.LazyZones;
@@ -157,6 +176,7 @@ public sealed partial class SettingsViewModel(MainViewModel main) : PageViewMode
         config.Window.Width = Math.Clamp(Width, 640, 7680);
         config.Window.Height = Math.Clamp(Height, 480, 4320);
         config.Window.Mode = WindowMode;
+        config.Window.UiScale = UiScale;
         config.UseAshita = UseAshita;
         var eraChanged = Era != config.Server.Era;
         config.Server.Era = Era;

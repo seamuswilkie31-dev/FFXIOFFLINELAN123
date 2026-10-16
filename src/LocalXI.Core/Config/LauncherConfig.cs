@@ -22,11 +22,17 @@ public enum GameEra
 }
 
 /// <summary>Values match the game's own registry setting 0034 (see Ashita docs for [ffxi.registry]).</summary>
+/// <summary>
+/// The game's window modes, as the value of ffxi.registry 0034. Its documented names for 2 and 3 are swapped in the
+/// official client (Ashita's configuration docs): 2 gives a borderless window of the chosen size, 3 a borderless
+/// window covering the screen. These names describe what the game actually does.
+/// </summary>
 public enum WindowMode
 {
     Fullscreen = 0,
     Windowed = 1,
-    BorderlessWindowed = 3,
+    BorderlessWindowed = 2,
+    BorderlessFullscreen = 3,
 }
 
 public sealed class LauncherConfig
@@ -84,6 +90,9 @@ public sealed class GameWindowSettings
     public int Width { get; set; } = 1920;
     public int Height { get; set; } = 1080;
     public WindowMode Mode { get; set; } = WindowMode.Windowed;
+
+    /// <summary>How big the game's menus and text are drawn, in percent (100 = the window's own resolution).</summary>
+    public int UiScale { get; set; } = 100;
 }
 
 public sealed class ServerOptions

@@ -1,7 +1,8 @@
 # Tutorial: changing your characters
 
-The **🛠 Modifiers** page edits the characters on your own world: gil and items, job levels, fame, quests,
-home points, storage, spells, trusts and GM powers. This guide walks through each tab.
+The **🛠 Modifiers** page edits the characters on your own world: gil and items, job levels, the sub job, Dual
+Wield and weapon skills, fame, quests, home points, storage, spells, trusts and GM powers. This guide walks
+through each tab.
 
 Modifiers only work on a world you run yourself (*Solo* or *Host for friends*). When you join a friend, your
 characters live on their PC, so they have to make the changes.
@@ -61,6 +62,21 @@ Each job has an **Unlocked** box and a **Level** box. Change what you like and p
 - Changing a job's level resets its EXP towards the next level.
 - If the new level is above the character's level cap (normally raised by the limit-break quests), the cap is
   raised so the level sticks.
+
+## Abilities
+
+Tick what you want and press **Save abilities**.
+
+- **Sub job unlocked:** lets the character set a support job in the Mog House, as if the sub job quest had
+  been done.
+- **Dual Wield on every job:** any job can hold a one-handed weapon in the off hand, with Dual Wield I (10% less
+  delay). Ninja and other jobs still gain their stronger Dual Wield from their own levels. This works through a
+  small server module that LocalXI adds, so it needs the server LocalXI downloads (not a custom server folder in
+  Settings).
+- **All weapon skills unlocked:** learns every weapon skill that normally needs a quest or a special weapon:
+  quest ones such as Asuran Fists and Savage Blade, and the relic, mythic and empyrean ones. Each still needs the
+  right job and combat skill level, and the relic, mythic and empyrean ones need level 75. Unticking forgets all
+  of them, including any earned in game.
 
 ## Fame
 

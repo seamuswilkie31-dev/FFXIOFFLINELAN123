@@ -195,3 +195,26 @@ public class ServerSettingsFilesTests : IDisposable
         Assert.Equal("-- my own settings\n", File.ReadAllText(MapLua));
     }
 }
+
+public class WeaponSkillBitsTests
+{
+    [Fact]
+    public void AllWeaponSkills_CoversUnlockIds1To63()
+    {
+        // xi::bitset<64>: unlock id n is bit n % 8 of byte n / 8; id 0 means "no unlock needed" and is never set.
+        var bits = CharacterEditor.AllWeaponSkills;
+        Assert.Equal(8, bits.Length);
+        Assert.Equal(0, bits[0] & 1);
+        Assert.All(Enumerable.Range(1, 63), id => Assert.NotEqual(0, bits[id / 8] & (1 << (id % 8))));
+    }
+
+    [Fact]
+    public void HasAllWeaponSkills_IgnoresBitZeroAndNeedsEveryOther()
+    {
+        Assert.True(CharacterEditor.HasAllWeaponSkills([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]));
+        Assert.True(CharacterEditor.HasAllWeaponSkills(CharacterEditor.AllWeaponSkills));
+        Assert.False(CharacterEditor.HasAllWeaponSkills([0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F]));
+        Assert.False(CharacterEditor.HasAllWeaponSkills(null));
+        Assert.False(CharacterEditor.HasAllWeaponSkills([0xFF]));
+    }
+}

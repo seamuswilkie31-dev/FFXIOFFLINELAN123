@@ -88,5 +88,19 @@ public class EraPresetTests : IDisposable
         Directory.CreateDirectory(Path.Combine(_root, "modules", "era", "lua"));
         EraPresets.WriteModuleList(_root);
         Assert.Contains("era/lua", File.ReadAllLines(Path.Combine(_root, EraPresets.ModuleListFile)));
+        Assert.DoesNotContain(LocalXiModule.Folder, File.ReadAllLines(Path.Combine(_root, EraPresets.ModuleListFile)));
+    }
+
+    [Fact]
+    public void ModuleList_LoadsLocalXiModule()
+    {
+        Directory.CreateDirectory(Path.Combine(_root, "modules", "era", "lua"));
+        LocalXiModule.Write(_root);
+        EraPresets.WriteModuleList(_root);
+
+        Assert.Equal(["era/lua", LocalXiModule.Folder], File.ReadAllLines(Path.Combine(_root, EraPresets.ModuleListFile)).Where(l => l.Length > 0 && l[0] != '#'));
+        var script = File.ReadAllText(Path.Combine(_root, "modules", LocalXiModule.Folder, "dual_wield.lua"));
+        Assert.Contains("m:addOverride('xi.traits.canApplyTrait'", script);
+        Assert.Contains($"getCharVar('{LocalXiModule.DualWieldVar}') == 1", script);
     }
 }

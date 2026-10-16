@@ -69,22 +69,25 @@ public static class EraPresets
     public static bool AllowsLazyZones(GameEra era) => era != GameEra.Classic75;
 
     /// <summary>
-    /// The modules LandSandBoat loads at start-up. era/lua is always listed: each of its overrides only applies when
-    /// the expansion it reverts is disabled, so in a modern world it does nothing.
+    /// The modules LandSandBoat loads at start-up: era/lua and LocalXI's own module, when the server has them. era/lua
+    /// is always listed: each of its overrides only applies when the expansion it reverts is disabled, so in a modern
+    /// world it does nothing.
     /// </summary>
     public static void WriteModuleList(string serverDir)
     {
-        var path = Path.Combine(serverDir, ModuleListFile);
-        if (!Directory.Exists(Path.Combine(serverDir, "modules", "era", "lua")))
+        var modules = Path.Combine(serverDir, "modules");
+        var entries = new[] { "era/lua", LocalXiModule.Folder }.Where(e => Directory.Exists(Path.Combine(modules, e))).ToList();
+        if (entries.Count == 0)
         {
             return;
         }
 
-        File.WriteAllText(path, """
-            # Written by LocalXI each time the server starts; changes here are overwritten.
-            # era/lua overrides switch themselves on and off from the ENABLE_* expansion settings.
-            era/lua
-
-            """);
+        File.WriteAllLines(Path.Combine(serverDir, ModuleListFile),
+        [
+            "# Written by LocalXI each time the server starts; changes here are overwritten.",
+            "# era/lua overrides switch themselves on and off from the ENABLE_* expansion settings.",
+            .. entries,
+            "",
+        ]);
     }
 }

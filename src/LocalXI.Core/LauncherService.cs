@@ -267,6 +267,8 @@ public sealed class LauncherService : IAsyncDisposable
         // Only manage the module list and settings files in the downloaded server; a developer's own build keeps theirs.
         if (string.IsNullOrWhiteSpace(Config.Server.OverrideDirectory))
         {
+            LocalXiModule.Write(ServerDirectory);
+            await LocalXiModule.AddDualWieldTraitsAsync(Database, cancellationToken);
             EraPresets.WriteModuleList(ServerDirectory);
             if (!ServerSettingsFiles.ApplyExpRate(ServerDirectory, Config.Server.ExpRate))
             {

@@ -128,6 +128,26 @@
                 </ScrollViewer>
             </TabItem>
 
+            <TabItem Header="Abilities">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="4,12,4,4">
+                        <CheckBox Content="Sub job unlocked" IsChecked="{Binding SubJobUnlocked}" />
+                        <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="28,2,0,12"
+                                   Text="Lets the character set a support job from the Mog House, as if the sub job quest had been done. The sub job still needs a job that's been unlocked and levelled." />
+
+                        <CheckBox Content="Dual Wield on every job" IsChecked="{Binding DualWield}" />
+                        <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="28,2,0,12"
+                                   Text="Any job can hold a one-handed weapon in the off hand (Dual Wield I, 10% less delay). Ninja and other jobs still gain their stronger Dual Wield from their own levels. Works through LocalXI's server module, so it needs a world LocalXI downloaded (not a custom server folder)." />
+
+                        <CheckBox Content="All weapon skills unlocked" IsChecked="{Binding AllWeaponSkills}" />
+                        <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="28,2,0,12"
+                                   Text="Learns every weapon skill that normally needs a quest or a special weapon: quest ones such as Asuran Fists and Savage Blade, and relic, mythic and empyrean ones. Each still needs the right job and combat skill level (relic, mythic and empyrean ones need level 75). Unticking forgets all of them, including any earned in game." />
+
+                        <Button Style="{StaticResource PrimaryButton}" Content="Save abilities" Command="{Binding SaveAbilitiesCommand}" HorizontalAlignment="Left" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <TabItem Header="Fame">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="4,12,4,4">

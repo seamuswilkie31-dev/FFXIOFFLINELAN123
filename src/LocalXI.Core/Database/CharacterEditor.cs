@@ -1,4 +1,5 @@
 using LocalXI.Core.Game;
+using LocalXI.Core.Server;
 using MySqlConnector;
 
 namespace LocalXI.Core.Database;
@@ -24,6 +25,9 @@ public sealed record GmSettings(int Level, bool GmMode, bool NewAdventurer);
 
 /// <summary>Slots in each storage container (char_storage); Mog Safe 2 shares the Mog Safe's size.</summary>
 public sealed record StorageSizes(int Inventory, int Safe, int Locker, bool LockerLeased, int Satchel, int Sack, int Case, int Wardrobes);
+
+/// <summary>Sub job unlocked, Dual Wield on every job (LocalXI module), and every unlockable weapon skill learned.</summary>
+public sealed record AbilityUnlocks(bool SubJob, bool DualWield, bool AllWeaponSkills);
 
 /// <summary>A spell_list group (xi.magic.spellGroup) with how many of its player spells a character knows.</summary>
 public sealed record SpellGroupCount(int Group, string Name, int Total, int Learned);
@@ -377,6 +381,68 @@ public sealed class CharacterEditor(GameDatabase database)
             lease.Parameters.AddWithValue("@accessVar", LockerAccessVar);
             lease.Parameters.AddWithValue("@forever", int.MaxValue);
             await lease.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    // ------------------------------------------------------------ abilities
+
+    // char_jobs.unlocked bit 0 is the sub job (what the sub job quests' unlockJob(0) sets).
+    private const long SubJobBit = 1;
+
+    /// <summary>
+    /// chars.weaponskills is LandSandBoat's learned-weapon-skill bitset (xi::bitset&lt;64&gt;: bit n in byte n/8,
+    /// bit n%8), indexed by weapon_skills.unlock_id 1-63: the quest, relic, mythic and empyrean weapon skills.
+    /// Learning one doesn't lift its job and skill-level requirements.
+    /// </summary>
+    internal static readonly byte[] AllWeaponSkills = [0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
+
+    public async Task<AbilityUnlocks> GetAbilityUnlocksAsync(uint charId, CancellationToken cancellationToken = default)
+    {
+        var subJob = (Convert.ToInt64(await database.ScalarAsync("SELECT unlocked FROM char_jobs WHERE charid = @id", Id(charId), cancellationToken) ?? 0) & SubJobBit) != 0;
+        var dualWield = Convert.ToInt64(await database.ScalarAsync(
+            "SELECT COUNT(*) FROM char_vars WHERE charid = @id AND varname = @var AND value = 1", Args(charId, ("@var", LocalXiModule.DualWieldVar)), cancellationToken)) > 0;
+        var learned = await database.ScalarAsync("SELECT weaponskills FROM chars WHERE charid = @id", Id(charId), cancellationToken) as byte[];
+        return new AbilityUnlocks(subJob, dualWield, HasAllWeaponSkills(learned));
+    }
+
+    internal static bool HasAllWeaponSkills(byte[]? learned) =>
+        learned is { Length: >= 8 } && AllWeaponSkills.Select((bits, i) => (learned[i] & bits) == bits).All(set => set);
+
+    /// <summary>
+    /// Applies the switches. Weapon skills are only written when the switch changes: on learns all of them, off
+    /// forgets all of them (including any learned in game).
+    /// </summary>
+    public async Task SetAbilityUnlocksAsync(uint charId, AbilityUnlocks unlocks, CancellationToken cancellationToken = default)
+    {
+        var before = await GetAbilityUnlocksAsync(charId, cancellationToken);
+        await using var connection = await database.OpenAsync(cancellationToken: cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+
+        await using (var subJob = new MySqlCommand("UPDATE char_jobs SET unlocked = IF(@on, unlocked | @bit, unlocked & ~@bit) WHERE charid = @id", connection, transaction))
+        {
+            subJob.Parameters.AddWithValue("@on", unlocks.SubJob);
+            subJob.Parameters.AddWithValue("@bit", SubJobBit);
+            subJob.Parameters.AddWithValue("@id", charId);
+            await subJob.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        await using (var dualWield = new MySqlCommand(unlocks.DualWield
+                         ? "REPLACE INTO char_vars (charid, varname, value, expiry) VALUES (@id, @var, 1, 0)"
+                         : "DELETE FROM char_vars WHERE charid = @id AND varname = @var", connection, transaction))
+        {
+            dualWield.Parameters.AddWithValue("@id", charId);
+            dualWield.Parameters.AddWithValue("@var", LocalXiModule.DualWieldVar);
+            await dualWield.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        if (unlocks.AllWeaponSkills != before.AllWeaponSkills)
+        {
+            await using var weaponSkills = new MySqlCommand("UPDATE chars SET weaponskills = @learned WHERE charid = @id", connection, transaction);
+            weaponSkills.Parameters.AddWithValue("@learned", unlocks.AllWeaponSkills ? AllWeaponSkills : new byte[AllWeaponSkills.Length]);
+            weaponSkills.Parameters.AddWithValue("@id", charId);
+            await weaponSkills.ExecuteNonQueryAsync(cancellationToken);
         }
 
         await transaction.CommitAsync(cancellationToken);

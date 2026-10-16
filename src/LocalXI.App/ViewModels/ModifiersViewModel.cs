@@ -139,6 +139,15 @@ public sealed partial class ModifiersViewModel(MainViewModel main) : PageViewMod
     private string _homePointSummary = "";
 
     [ObservableProperty]
+    private bool _subJobUnlocked;
+
+    [ObservableProperty]
+    private bool _dualWield;
+
+    [ObservableProperty]
+    private bool _allWeaponSkills;
+
+    [ObservableProperty]
     private string _storageSummary = "";
 
     [ObservableProperty]
@@ -238,6 +247,9 @@ public sealed partial class ModifiersViewModel(MainViewModel main) : PageViewMod
             HomePointSummary = catalog.HomePoints.Count == 0
                 ? "The server's home point list couldn't be read."
                 : $"{registered} of {catalog.HomePoints.Count} home point crystals registered.";
+
+            var abilities = await editor.GetAbilityUnlocksAsync(character.Id);
+            (SubJobUnlocked, DualWield, AllWeaponSkills) = (abilities.SubJob, abilities.DualWield, abilities.AllWeaponSkills);
 
             var storage = await editor.GetStorageAsync(character.Id);
             StorageSummary = string.Join("\n",
@@ -439,6 +451,10 @@ public sealed partial class ModifiersViewModel(MainViewModel main) : PageViewMod
     private Task ClearHomePointsAsync() =>
         EditAsync("Home point registrations cleared.",
             (editor, id) => editor.SetHomePointsAsync(id, Launcher.Catalog.HomePoints.Select(h => h.Index), registered: false));
+
+    [RelayCommand]
+    private Task SaveAbilitiesAsync() =>
+        EditAsync("Abilities saved.", (editor, id) => editor.SetAbilityUnlocksAsync(id, new AbilityUnlocks(SubJobUnlocked, DualWield, AllWeaponSkills)));
 
     [RelayCommand]
     private Task UnlockStorageAsync() =>

@@ -2,12 +2,19 @@
 
 ## Verified (October 2026, Windows 10 22H2)
 
-- **Unit tests** (`dotnet test`, 79 tests): INI editing, password rules, client-version parsing, the
+- **Unit tests** (`dotnet test`, 89 tests): INI editing, password rules, client-version parsing, the
   component manifest, download hash checking, zip install/upgrade with preserved folders, era presets and
-  data-pack ordering, the player-table list, server package detection, login-protocol replies, network adapter
-  classification, Windows argument quoting, the character data layouts and server-script parsers the
-  Modifiers page uses, and the game's COM class registrations that **Fix registry** writes (in a scratch
-  per-user registry key).
+  data-pack ordering, the module list, the player-table list, server package detection, login-protocol replies,
+  network adapter classification, Windows argument quoting, the character data layouts and server-script
+  parsers the Modifiers page uses, the game's COM class registrations that **Fix registry** writes (in a
+  scratch per-user registry key), the boot config's window modes and interface size, and server programs
+  being safe to ask about once stopped.
+- **Per-character Dual Wield in the real server engine**, with LandSandBoat's own test runner (`xi_test.exe`)
+  and LocalXI's module and trait rows: a level-30 warrior has no Dual Wield without the setting and Dual Wield I
+  with it, loses it when the setting is cleared, and a ninja keeps its own Dual Wield II either way.
+- **Server shutdown popups** ("No process is associated with this object", one per server program): reproduced
+  by checking server status just after each program stopped, as the Play page does; 4 errors before the fix,
+  none after.
 - **Registry check** against a real official install: the stricter check (install folders plus COM classes)
   accepts it, so working installs aren't flagged.
 - **In game** with the October 2026 client: Ashita 4.3.2.1 and xiloader start the game, log in to the local
@@ -48,8 +55,11 @@ These need the game client:
 - [ ] Classic era in-game: level cap 75, later-expansion areas closed
 - [ ] Close the game → automatic backup → server stop
 - [ ] Modifiers changes as seen in game (gil, items, job levels, fame, quest log, home points, EXP rate,
-  storage sizes and the Mog Locker, learned spells and trusts, GM mode and the New Adventurer icon). The Judge's
-  outfit has been worn in game.
+  storage sizes and the Mog Locker, learned spells and trusts, GM mode and the New Adventurer icon, sub job,
+  Dual Wield, weapon skills). The Judge's outfit has been worn in game.
+- [ ] Window modes in game: borderless windowed (0034 = 2) is a borderless window of the chosen size, borderless
+  fullscreen (0034 = 3) covers the screen (the client's documented names for 2 and 3 are swapped)
+- [ ] Interface size in game: a smaller menu resolution (0037/0038) makes the menus bigger
 - [ ] Host mode: a second PC on Radmin VPN creates an account from Join setup and plays
 - [ ] Firewall rules: friends connect after **Allow friends through Windows Firewall**
 - [ ] Registry repair on a copied install (install folders and COM classes), then the game starts

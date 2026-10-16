@@ -2,16 +2,21 @@
 
 ## Verified (October 2026, Windows 10 22H2)
 
-- **Unit tests** (`dotnet test`, 89 tests): INI editing, password rules, client-version parsing, the
+- **Unit tests** (`dotnet test`, 96 tests): INI editing, password rules, client-version parsing, the
   component manifest, download hash checking, zip install/upgrade with preserved folders, era presets and
   data-pack ordering, the module list, the player-table list, server package detection, login-protocol replies,
   network adapter classification, Windows argument quoting, the character data layouts and server-script
   parsers the Modifiers page uses, the game's COM class registrations that **Fix registry** writes (in a
   scratch per-user registry key), the boot config's window modes and interface size, and server programs
-  being safe to ask about once stopped.
+  being safe to ask about once stopped, and reading the character-data converter's report.
 - **Per-character Dual Wield in the real server engine**, with LandSandBoat's own test runner (`xi_test.exe`)
   and LocalXI's module and trait rows: a level-30 warrior has no Dual Wield without the setting and Dual Wield I
   with it, loses it when the setting is cleared, and a ninja keeps its own Dual Wield II either way.
+- **Character data conversion**, in a throwaway world with a copy of a real character: a new world is marked
+  converted without running; loading a save runs the converter (nothing to do); an older layout (columns from
+  migrations 069-071 removed, covering accounts_profile, char_jobs and char_exp) is converted on the next Play
+  with the character's levels, account and character intact; a failing migration stops the update with the
+  backup message and isn't marked done; the real server then starts cleanly.
 - **Server shutdown popups** ("No process is associated with this object", one per server program): reproduced
   by checking server status just after each program stopped, as the Play page does; 4 errors before the fix,
   none after.

@@ -133,6 +133,7 @@ Step-by-step guide, including how to undo changes and a list of handy GM command
 | [MariaDB](https://mariadb.org) | Stores the world and your characters | Official portable zip, pinned and hash-checked |
 | [Ashita v4](https://www.ashitaxi.com) | Starts the game client | Official release, pinned and hash-checked |
 | [xiloader](https://github.com/LandSandBoat/xiloader) | Connects the client to the server | Official release, pinned and hash-checked |
+| [Python](https://www.python.org) + MariaDB connector | Converts your characters when a LocalXI update brings a newer server (LandSandBoat's own migrations) | Official embeddable Python and PyPI packages, pinned and hash-checked; private to LocalXI |
 | Visual C++ runtime | Needed by the above | Microsoft, installed only if missing |
 
 Nothing is installed system-wide apart from the Visual C++ runtime, the PlayOnline registry fix and firewall

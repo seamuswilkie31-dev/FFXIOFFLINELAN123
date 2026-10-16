@@ -53,6 +53,13 @@ When a player presses **Play** on a launcher that pins a newer component, the la
 a new server it keeps `navmeshes\`, `ximeshes\` and `log\`, backs up the characters (`before-update-*.xisave`),
 then re-imports game data without touching player tables (`SchemaImporter.RefreshGameDataAsync`).
 
-**Not automated yet:** running LandSandBoat's Python migrations (`tools/migrations`) after an update that
-changes player-table layouts. Until that exists, check the LandSandBoat changelog before bumping the server
-version for existing players.
+Then it converts the player tables (accounts, characters and everything they own) to the new server's layout
+by running LandSandBoat's own migrations (`tools/migrations`), the same way `tools/dbtool.py` does: every
+migration is asked whether it's needed, and the needed ones run in file-name order. LocalXI runs them on a
+private Python (the `python`, `python-mariadb` and `python-packaging` components), because dbtool itself needs a
+full Python setup and asks questions. It runs once per server version (recorded as `migrated_server` in the
+`localxi_meta` table), and again whenever a save is loaded, since a save may come from an older server. If a
+migration fails, the server isn't started; the backup from before the update is on the Saves page and the
+failing migration is on the Logs page.
+
+Migrations only move data forward. A save from a *newer* server than the one installed can't be converted back.

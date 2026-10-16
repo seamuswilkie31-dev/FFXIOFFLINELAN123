@@ -100,6 +100,45 @@
       "fileName": "xiloader.exe",
       "license": "GPL-3.0",
       "homepage": "https://github.com/LandSandBoat/xiloader"
+    },
+    {
+      "id": "python",
+      "name": "Python (for character data conversion)",
+      "role": "server",
+      "version": "3.13.16",
+      "kind": "zip",
+      "url": "https://www.python.org/ftp/python/3.13.16/python-3.13.16-embed-amd64.zip",
+      "sha256": "97dae5274cc54867065e8d5a3226e48c35017ed332a0fdb0e27d5b5821961297",
+      "installDir": "python",
+      "probe": "python.exe",
+      "license": "PSF-2.0",
+      "homepage": "https://www.python.org"
+    },
+    {
+      "id": "python-mariadb",
+      "name": "MariaDB Connector/Python",
+      "role": "server",
+      "version": "1.1.14",
+      "kind": "zip",
+      "url": "https://files.pythonhosted.org/packages/af/23/e952a7e442913abd8079cd27b80b69474895c93b3727fad41c7642a80c62/mariadb-1.1.14-cp313-cp313-win_amd64.whl",
+      "sha256": "7fd603c5cf23c47ef0d28fdc2b4b79919ee7f75d00ed070d3cd1054dcf816aeb",
+      "installDir": "python-packages",
+      "probe": "mariadb/__init__.py",
+      "license": "LGPL-2.1",
+      "homepage": "https://github.com/mariadb-corporation/mariadb-connector-python"
+    },
+    {
+      "id": "python-packaging",
+      "name": "packaging (needed by the MariaDB connector)",
+      "role": "server",
+      "version": "26.3",
+      "kind": "zip",
+      "url": "https://files.pythonhosted.org/packages/63/34/ba1c580383c9eada3711951fef0795c80b829a078d72188184bcab9dd527/packaging-26.3-py3-none-any.whl",
+      "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
+      "installDir": "python-packaging",
+      "probe": "packaging/version.py",
+      "license": "Apache-2.0 OR BSD-2-Clause",
+      "homepage": "https://github.com/pypa/packaging"
     }
   ]
 }

@@ -14,6 +14,7 @@ configures them from the outside, and starts and stops them in the right order.
   runtime\mariadb\        portable MariaDB
   runtime\server\         LandSandBoat build (+ navmeshes\, ximeshes\, log\)
   runtime\ashita\         Ashita v4, with bootloader\xiloader.exe added
+  runtime\python\         private Python 3.13 for converting player data (+ python-packages\, python-packaging\)
   database\               MariaDB data folder: the live world
   logs\                   one log per program
 
@@ -51,6 +52,21 @@ Game data is loaded the way LandSandBoat's `tools/dbtool.py` does it: every `sql
 order with `triggers.sql` last, each piped through the `mariadb` command-line client. The client is needed
 rather than a driver because the files use client features such as `DELIMITER`. A `localxi_meta` table records
 that the import finished.
+
+### Converting player data between server versions
+
+A newer LandSandBoat can change the player tables' layout. LandSandBoat ships Python migrations for that
+(`tools/migrations`): each one checks whether it's needed (`needs_to_run`) and converts the tables (`migrate`).
+`MigrationRunner` runs them like `tools/dbtool.py` does (check every migration, then run the needed ones in
+file-name order) through a small driver script on a private Python 3.13 with only the MariaDB connector and the
+one package it needs, all pinned components. Credentials go to the driver through environment variables.
+
+`LauncherService` runs it after reloading game data for a newer server, and straight after loading a save (which
+may come from an older server); `migrated_server` in `localxi_meta` records the server version the player
+tables were last converted for, so it only runs when that changes. A new world is created in the current layout,
+so it's marked as converted without running. If any migration is still needed after running, the server isn't
+started: the update or import backup is on the Saves page and the failing migration on the Logs page. Problems
+with single characters' data (`migration_errors.log`) are reported as warnings, as dbtool does.
 
 ## Starting the server
 

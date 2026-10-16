@@ -134,7 +134,9 @@ public sealed class LauncherService : IAsyncDisposable
         var eraCurrent = await ReadMetaAsync("imported_era", cancellationToken) == era;
         if (serverCurrent && eraCurrent)
         {
-            return; // Game data matches the installed server and the chosen era.
+            // Game data matches the installed server and the chosen era; player tables may still be older (a loaded save).
+            await EnsureMigratedAsync(status, cancellationToken);
+            return;
         }
 
         if (!ServerPackage.LooksValid)
@@ -173,6 +175,63 @@ public sealed class LauncherService : IAsyncDisposable
 
         await WriteMetaAsync("imported_server", ServerPackage.LsbCommit ?? "unknown", cancellationToken);
         await WriteMetaAsync("imported_era", era, cancellationToken);
+
+        if (imported is null)
+        {
+            // A new world's player tables come straight from this server's own SQL: already in its layout.
+            await WriteMetaAsync("migrated_server", ServerPackage.LsbCommit ?? "unknown", cancellationToken);
+        }
+        else
+        {
+            // Like dbtool's update: game data first, then convert the player tables to this server version.
+            await EnsureMigratedAsync(status, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Converts the player tables (accounts, characters and everything they own) to the installed server's layout
+    /// with LandSandBoat's own migrations; see <see cref="MigrationRunner"/>. Runs once per server version, and again
+    /// after a save is loaded. Rather than start the server on half-converted data, a failure stops here.
+    /// </summary>
+    private async Task EnsureMigratedAsync(IProgress<string>? status, CancellationToken cancellationToken)
+    {
+        var current = ServerPackage.LsbCommit ?? "unknown";
+        if (await ReadMetaAsync("migrated_server", cancellationToken) == current)
+        {
+            return;
+        }
+
+        var runner = new MigrationRunner(Paths, Database, ServerDirectory);
+        if (!runner.IsAvailable)
+        {
+            Logs.Add("launcher", "Character data conversion skipped: the converter or the server's migrations aren't installed.");
+            return;
+        }
+
+        var result = await runner.RunAsync(status, cancellationToken);
+        foreach (var migration in result.Ran)
+        {
+            Logs.Add("launcher", "Converted character data: " + migration);
+        }
+
+        foreach (var warning in result.Warnings)
+        {
+            Logs.Add("launcher", warning);
+        }
+
+        if (!result.Succeeded)
+        {
+            foreach (var failure in result.Failed)
+            {
+                Logs.Add("launcher", "Character data conversion failed: " + failure);
+            }
+
+            throw new InvalidOperationException(
+                "Some character data couldn't be converted to this server version, so the server wasn't started. " +
+                "Your characters were backed up first (Saves page). The Logs page has the details.");
+        }
+
+        await WriteMetaAsync("migrated_server", current, cancellationToken);
     }
 
     /// <summary>
@@ -429,6 +488,10 @@ public sealed class LauncherService : IAsyncDisposable
 
         progress?.Report("Loading the save...");
         var manifest = await Saves.ImportAsync(saveFile, cancellationToken);
+
+        // The save may come from an older server version: convert its tables before anything reads them.
+        await WriteMetaAsync("migrated_server", "", cancellationToken);
+        await EnsureMigratedAsync(progress, cancellationToken);
 
         // The save brings its own accounts. Log in as the account that owned it, with this PC's password,
         // so the imported characters show up straight away.

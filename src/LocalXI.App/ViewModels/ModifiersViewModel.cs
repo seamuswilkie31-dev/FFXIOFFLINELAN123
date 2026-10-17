@@ -148,6 +148,13 @@ public sealed partial class ModifiersViewModel(MainViewModel main) : PageViewMod
     private bool _allWeaponSkills;
 
     [ObservableProperty]
+    private bool _allMaps;
+
+    public string MapsHint => Launcher.Catalog.MapKeyItems.Count == 0
+        ? "The server's map list couldn't be read, so maps can't be changed here."
+        : $"Gives every map ({Launcher.Catalog.MapKeyItems.Count} in this server version), so the map menu shows every area, as if each had been bought or found. Unticking takes all of them away, including any bought in game.";
+
+    [ObservableProperty]
     private string _storageSummary = "";
 
     [ObservableProperty]
@@ -248,8 +255,9 @@ public sealed partial class ModifiersViewModel(MainViewModel main) : PageViewMod
                 ? "The server's home point list couldn't be read."
                 : $"{registered} of {catalog.HomePoints.Count} home point crystals registered.";
 
-            var abilities = await editor.GetAbilityUnlocksAsync(character.Id);
-            (SubJobUnlocked, DualWield, AllWeaponSkills) = (abilities.SubJob, abilities.DualWield, abilities.AllWeaponSkills);
+            var abilities = await editor.GetAbilityUnlocksAsync(character.Id, catalog.MapKeyItems);
+            (SubJobUnlocked, DualWield, AllWeaponSkills, AllMaps) = (abilities.SubJob, abilities.DualWield, abilities.AllWeaponSkills, abilities.AllMaps);
+            OnPropertyChanged(nameof(MapsHint));
 
             var storage = await editor.GetStorageAsync(character.Id);
             StorageSummary = string.Join("\n",
@@ -454,7 +462,8 @@ public sealed partial class ModifiersViewModel(MainViewModel main) : PageViewMod
 
     [RelayCommand]
     private Task SaveAbilitiesAsync() =>
-        EditAsync("Abilities saved.", (editor, id) => editor.SetAbilityUnlocksAsync(id, new AbilityUnlocks(SubJobUnlocked, DualWield, AllWeaponSkills)));
+        EditAsync("Abilities saved.", (editor, id) =>
+            editor.SetAbilityUnlocksAsync(id, new AbilityUnlocks(SubJobUnlocked, DualWield, AllWeaponSkills, AllMaps), Launcher.Catalog.MapKeyItems));
 
     [RelayCommand]
     private Task UnlockStorageAsync() =>

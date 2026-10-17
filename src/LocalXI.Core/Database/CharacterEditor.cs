@@ -26,8 +26,11 @@ public sealed record GmSettings(int Level, bool GmMode, bool NewAdventurer);
 /// <summary>Slots in each storage container (char_storage); Mog Safe 2 shares the Mog Safe's size.</summary>
 public sealed record StorageSizes(int Inventory, int Safe, int Locker, bool LockerLeased, int Satchel, int Sack, int Case, int Wardrobes);
 
-/// <summary>Sub job unlocked, Dual Wield on every job (LocalXI module), and every unlockable weapon skill learned.</summary>
-public sealed record AbilityUnlocks(bool SubJob, bool DualWield, bool AllWeaponSkills);
+/// <summary>
+/// Sub job unlocked, Dual Wield on every job (LocalXI module), every unlockable weapon skill learned, and every map
+/// key item owned.
+/// </summary>
+public sealed record AbilityUnlocks(bool SubJob, bool DualWield, bool AllWeaponSkills, bool AllMaps);
 
 /// <summary>A spell_list group (xi.magic.spellGroup) with how many of its player spells a character knows.</summary>
 public sealed record SpellGroupCount(int Group, string Name, int Total, int Learned);
@@ -398,25 +401,29 @@ public sealed class CharacterEditor(GameDatabase database)
     /// </summary>
     internal static readonly byte[] AllWeaponSkills = [0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
 
-    public async Task<AbilityUnlocks> GetAbilityUnlocksAsync(uint charId, CancellationToken cancellationToken = default)
+    /// <param name="mapKeyItems">Every map's key item id, from <see cref="GameCatalog.MapKeyItems"/>.</param>
+    public async Task<AbilityUnlocks> GetAbilityUnlocksAsync(uint charId, IReadOnlyCollection<int> mapKeyItems, CancellationToken cancellationToken = default)
     {
         var subJob = (Convert.ToInt64(await database.ScalarAsync("SELECT unlocked FROM char_jobs WHERE charid = @id", Id(charId), cancellationToken) ?? 0) & SubJobBit) != 0;
         var dualWield = Convert.ToInt64(await database.ScalarAsync(
             "SELECT COUNT(*) FROM char_vars WHERE charid = @id AND varname = @var AND value = 1", Args(charId, ("@var", LocalXiModule.DualWieldVar)), cancellationToken)) > 0;
         var learned = await database.ScalarAsync("SELECT weaponskills FROM chars WHERE charid = @id", Id(charId), cancellationToken) as byte[];
-        return new AbilityUnlocks(subJob, dualWield, HasAllWeaponSkills(learned));
+        var keyItems = await database.ScalarAsync("SELECT keyitems FROM chars WHERE charid = @id", Id(charId), cancellationToken) as byte[];
+        var allMaps = mapKeyItems.Count > 0 && mapKeyItems.All(map => KeyItemBlob.Has(keyItems, map));
+        return new AbilityUnlocks(subJob, dualWield, HasAllWeaponSkills(learned), allMaps);
     }
 
     internal static bool HasAllWeaponSkills(byte[]? learned) =>
         learned is { Length: >= 8 } && AllWeaponSkills.Select((bits, i) => (learned[i] & bits) == bits).All(set => set);
 
     /// <summary>
-    /// Applies the switches. Weapon skills are only written when the switch changes: on learns all of them, off
-    /// forgets all of them (including any learned in game).
+    /// Applies the switches. Weapon skills and maps are only written when their switch changes: on gives all of
+    /// them, off takes all of them away (including any earned or bought in game).
     /// </summary>
-    public async Task SetAbilityUnlocksAsync(uint charId, AbilityUnlocks unlocks, CancellationToken cancellationToken = default)
+    public async Task SetAbilityUnlocksAsync(uint charId, AbilityUnlocks unlocks, IReadOnlyCollection<int> mapKeyItems, CancellationToken cancellationToken = default)
     {
-        var before = await GetAbilityUnlocksAsync(charId, cancellationToken);
+        var before = await GetAbilityUnlocksAsync(charId, mapKeyItems, cancellationToken);
+        var keyItems = await database.ScalarAsync("SELECT keyitems FROM chars WHERE charid = @id", Id(charId), cancellationToken) as byte[];
         await using var connection = await database.OpenAsync(cancellationToken: cancellationToken);
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
 
@@ -443,6 +450,14 @@ public sealed class CharacterEditor(GameDatabase database)
             weaponSkills.Parameters.AddWithValue("@learned", unlocks.AllWeaponSkills ? AllWeaponSkills : new byte[AllWeaponSkills.Length]);
             weaponSkills.Parameters.AddWithValue("@id", charId);
             await weaponSkills.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        if (unlocks.AllMaps != before.AllMaps && mapKeyItems.Count > 0)
+        {
+            await using var maps = new MySqlCommand("UPDATE chars SET keyitems = @keyitems WHERE charid = @id", connection, transaction);
+            maps.Parameters.AddWithValue("@keyitems", KeyItemBlob.Set(keyItems, mapKeyItems, unlocks.AllMaps));
+            maps.Parameters.AddWithValue("@id", charId);
+            await maps.ExecuteNonQueryAsync(cancellationToken);
         }
 
         await transaction.CommitAsync(cancellationToken);

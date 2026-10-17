@@ -97,7 +97,7 @@ The **Modifiers** page edits the characters on your own world, one character at 
 |---|---|
 | Inventory | Set gil; search every item in the game and add it; remove items (not ones being worn) |
 | Jobs | Set job levels and unlock jobs (up to 75 in classic mode) |
-| Abilities | Unlock the sub job, give the character Dual Wield on every job, and learn every quest, relic, mythic and empyrean weapon skill |
+| Abilities | Unlock the sub job, give the character Dual Wield on every job, learn every quest, relic, mythic and empyrean weapon skill, and unlock every map |
 | Fame | Set fame level 1–9 for San d'Oria, Bastok, Windurst and Norg |
 | Quests | Set any quest to not started, accepted or completed (the quest log only; no rewards) |
 | Home points | Register every home point crystal at once, so you can warp between them straight away |

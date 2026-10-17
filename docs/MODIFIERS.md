@@ -1,7 +1,7 @@
 # Tutorial: changing your characters
 
 The **🛠 Modifiers** page edits the characters on your own world: gil and items, job levels, the sub job, Dual
-Wield and weapon skills, fame, quests, home points, storage, spells, trusts and GM powers. This guide walks
+Wield, weapon skills and maps, fame, quests, home points, storage, spells, trusts and GM powers. This guide walks
 through each tab.
 
 Modifiers only work on a world you run yourself (*Solo* or *Host for friends*). When you join a friend, your
@@ -77,6 +77,9 @@ Tick what you want and press **Save abilities**.
   quest ones such as Asuran Fists and Savage Blade, and the relic, mythic and empyrean ones. Each still needs the
   right job and combat skill level, and the relic, mythic and empyrean ones need level 75. Unticking forgets all
   of them, including any earned in game.
+- **All maps unlocked:** gives every map key item (134 in this server version), so the in-game map menu shows
+  every area, as if each map had been bought or found. Unticking takes all of them away, including any bought in
+  game.
 
 ## Fame
 

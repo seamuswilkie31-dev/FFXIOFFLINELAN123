@@ -218,3 +218,54 @@ public class WeaponSkillBitsTests
         Assert.False(CharacterEditor.HasAllWeaponSkills([0xFF]));
     }
 }
+
+public class MapKeyItemTests
+{
+    [Fact]
+    public void ParseMapKeyItems_TakesOnlyMaps()
+    {
+        const string lua = """
+            xi.keyItem =
+            {
+                MEMORANDOLL                             = 2466,
+                MAP_OF_ABDH_ISLE_PURGONORGO             = 383,
+                MAP_OF_THE_SAN_DORIA_AREA               = 385,
+                MAP_OF_REISENJIMA                       = 2309,
+                MAPLE_LEAF                              = 999,
+            }
+            """;
+
+        Assert.Equal([383, 385, 2309], GameCatalog.ParseMapKeyItems(lua));
+    }
+
+    [Fact]
+    public void KeyItemBlob_UsesLandSandBoatsLayout()
+    {
+        // Seen on a real character: the Memorandoll (2466) is byte 564, bit 2 (table 4, keyList, item 418).
+        var blob = KeyItemBlob.Set(null, [2466], owned: true);
+        Assert.Equal(KeyItemBlob.Size, blob.Length);
+        Assert.Equal(0x04, blob[564]);
+        Assert.True(KeyItemBlob.Has(blob, 2466));
+
+        // Map of the San d'Oria area (385): table 0, byte 48, bit 1. Map of Reisenjima (2309): table 4, byte 544, bit 5.
+        blob = KeyItemBlob.Set(blob, [385, 2309], owned: true);
+        Assert.Equal(0x02, blob[48]);
+        Assert.Equal(0x20, blob[544]);
+        Assert.Equal(1, blob.Count(b => b != 0) - 2);
+    }
+
+    [Fact]
+    public void KeyItemBlob_TakingAway_ClearsOwnedAndSeenOnly()
+    {
+        var blob = new byte[KeyItemBlob.Size];
+        blob[48] = 0x03;      // owns 384 and 385
+        blob[64 + 48] = 0x02; // has seen 385
+
+        var after = KeyItemBlob.Set(blob, [385], owned: false);
+
+        Assert.Equal(0x01, after[48]);
+        Assert.Equal(0x00, after[64 + 48]);
+        Assert.False(KeyItemBlob.Has(after, 385));
+        Assert.True(KeyItemBlob.Has(after, 384));
+    }
+}

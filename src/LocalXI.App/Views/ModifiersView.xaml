@@ -143,6 +143,9 @@
                         <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="28,2,0,12"
                                    Text="Learns every weapon skill that normally needs a quest or a special weapon: quest ones such as Asuran Fists and Savage Blade, and relic, mythic and empyrean ones. Each still needs the right job and combat skill level (relic, mythic and empyrean ones need level 75). Unticking forgets all of them, including any earned in game." />
 
+                        <CheckBox Content="All maps unlocked" IsChecked="{Binding AllMaps}" />
+                        <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="28,2,0,12" Text="{Binding MapsHint}" />
+
                         <Button Style="{StaticResource PrimaryButton}" Content="Save abilities" Command="{Binding SaveAbilitiesCommand}" HorizontalAlignment="Left" />
                     </StackPanel>
                 </ScrollViewer>

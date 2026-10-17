@@ -94,3 +94,49 @@ public static class HomePointBlob
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, MaxCrystals);
     }
 }
+
+/// <summary>
+/// chars.keyitems: keyitems_t from LandSandBoat's common/mmo.h, 8 tables of 512 key items, each table a keyList
+/// bitset (owned) followed by a seenList bitset (already looked at), 64 bytes each. Key item n is bit n % 512 of
+/// table n / 512, in xi::bitset order (byte i / 8, bit i % 8).
+/// </summary>
+public static class KeyItemBlob
+{
+    private const int Tables = 8;
+    private const int PerTable = 512;
+    private const int ListBytes = PerTable / 8;
+    public const int Size = Tables * 2 * ListBytes;
+
+    public static bool Has(byte[]? blob, int keyItem)
+    {
+        var (index, mask) = Locate(keyItem, seen: false);
+        return blob is not null && index < blob.Length && (blob[index] & mask) != 0;
+    }
+
+    /// <summary>Gives or takes the key items. Taken ones are also marked unseen, as the game does.</summary>
+    public static byte[] Set(byte[]? blob, IEnumerable<int> keyItems, bool owned)
+    {
+        var result = new byte[Math.Max(blob?.Length ?? 0, Size)];
+        blob?.CopyTo(result, 0);
+        foreach (var keyItem in keyItems)
+        {
+            var (index, mask) = Locate(keyItem, seen: false);
+            result[index] = (byte)(owned ? result[index] | mask : result[index] & ~mask);
+            if (!owned)
+            {
+                var (seenIndex, seenMask) = Locate(keyItem, seen: true);
+                result[seenIndex] = (byte)(result[seenIndex] & ~seenMask);
+            }
+        }
+
+        return result;
+    }
+
+    private static (int Index, int Mask) Locate(int keyItem, bool seen)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(keyItem);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(keyItem, Tables * PerTable);
+        var bit = keyItem % PerTable;
+        return ((keyItem / PerTable * 2 + (seen ? 1 : 0)) * ListBytes + bit / 8, 1 << (bit % 8));
+    }
+}

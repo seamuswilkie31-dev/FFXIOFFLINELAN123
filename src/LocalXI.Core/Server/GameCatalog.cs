@@ -29,15 +29,19 @@ public sealed partial class GameCatalog
         ["AHT_URHGAN"] = 6, ["CRYSTAL_WAR"] = 7, ["ABYSSEA"] = 8, ["ADOULIN"] = 9, ["COALITION"] = 10,
     };
 
-    private GameCatalog(IReadOnlyList<HomePointInfo> homePoints, IReadOnlyList<QuestInfo> quests, IReadOnlyList<int> fameRankPoints)
+    private GameCatalog(IReadOnlyList<HomePointInfo> homePoints, IReadOnlyList<QuestInfo> quests, IReadOnlyList<int> fameRankPoints, IReadOnlyList<int> mapKeyItems)
     {
         HomePoints = homePoints;
         Quests = quests;
         FameRankPoints = fameRankPoints;
+        MapKeyItems = mapKeyItems;
     }
 
     public IReadOnlyList<HomePointInfo> HomePoints { get; }
     public IReadOnlyList<QuestInfo> Quests { get; }
+
+    /// <summary>Key item ids of every map (xi.keyItem.MAP_OF_*), the same set the !addallmaps command gives.</summary>
+    public IReadOnlyList<int> MapKeyItems { get; }
 
     /// <summary>Fame points needed for levels 1..9 (index 0 is level 1).</summary>
     public IReadOnlyList<int> FameRankPoints { get; }
@@ -56,8 +60,17 @@ public sealed partial class GameCatalog
         return new GameCatalog(
             Read("scripts", "globals", "homepoint.lua") is { } homepoints ? ParseHomePoints(homepoints) : [],
             Read("scripts", "globals", "quests.lua") is { } quests ? ParseQuests(quests, areas) : [],
-            fame.Count == 9 ? fame : DefaultFameRankPoints);
+            fame.Count == 9 ? fame : DefaultFameRankPoints,
+            Read("scripts", "enum", "key_item.codegen.lua") is { } keyItems ? ParseMapKeyItems(keyItems) : []);
     }
+
+    /// <summary>Lines like <c>MAP_OF_THE_SAN_DORIA_AREA = 385,</c> in the key item enum.</summary>
+    internal static IReadOnlyList<int> ParseMapKeyItems(string lua) =>
+        MapKeyItemEntry().Matches(lua)
+            .Select(m => int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture))
+            .Distinct()
+            .Order()
+            .ToList();
 
     public int FameLevel(int points)
     {
@@ -159,4 +172,7 @@ public sealed partial class GameCatalog
 
     [GeneratedRegex("^[IVX]+$")]
     private static partial Regex RomanNumeral();
+
+    [GeneratedRegex(@"^\s*MAP_OF_[A-Z0-9_]+\s*=\s*(\d+)\s*,", RegexOptions.Multiline)]
+    private static partial Regex MapKeyItemEntry();
 }

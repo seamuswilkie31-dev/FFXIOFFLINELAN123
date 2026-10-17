@@ -2,11 +2,11 @@
 
 ## Verified (October 2026, Windows 10 22H2)
 
-- **Unit tests** (`dotnet test`, 96 tests): INI editing, password rules, client-version parsing, the
+- **Unit tests** (`dotnet test`, 99 tests): INI editing, password rules, client-version parsing, the
   component manifest, download hash checking, zip install/upgrade with preserved folders, era presets and
   data-pack ordering, the module list, the player-table list, server package detection, login-protocol replies,
   network adapter classification, Windows argument quoting, the character data layouts and server-script
-  parsers the Modifiers page uses, the game's COM class registrations that **Fix registry** writes (in a
+  parsers the Modifiers page uses (including the map list and key item layout, checked against a real character), the game's COM class registrations that **Fix registry** writes (in a
   scratch per-user registry key), the boot config's window modes and interface size, and server programs
   being safe to ask about once stopped, and reading the character-data converter's report.
 - **Per-character Dual Wield in the real server engine**, with LandSandBoat's own test runner (`xi_test.exe`)
@@ -61,7 +61,7 @@ These need the game client:
 - [ ] Close the game → automatic backup → server stop
 - [ ] Modifiers changes as seen in game (gil, items, job levels, fame, quest log, home points, EXP rate,
   storage sizes and the Mog Locker, learned spells and trusts, GM mode and the New Adventurer icon, sub job,
-  Dual Wield, weapon skills). The Judge's outfit has been worn in game.
+  Dual Wield, weapon skills, maps). The Judge's outfit has been worn in game.
 - [ ] Window modes in game: borderless windowed (0034 = 2) is a borderless window of the chosen size, borderless
   fullscreen (0034 = 3) covers the screen (the client's documented names for 2 and 3 are swapped)
 - [ ] Interface size in game: a smaller menu resolution (0037/0038) makes the menus bigger
